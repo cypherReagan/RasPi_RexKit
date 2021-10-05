@@ -1,0 +1,12 @@
+
+
+
+Reference:
+https://osoyoo.com/2016/12/15/raspberrypi-ir-remote/
+https://osoyoo.com/2021/05/26/use-basic-gpio-library-to-get-ir-remote-code-no-need-lirc/
+|
+|-> see http://osoyoo.com/driver/pi/ir.py for IR recv python code
+
+
+https://learn.sparkfun.com/tutorials/raspberry-pi-spi-and-i2c-tutorial/all#i2c-on-pi
+-> I2C tutorial
