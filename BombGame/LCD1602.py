@@ -98,4 +98,4 @@ def write(x, y, str):
 if __name__ == '__main__':
 	init(0x27, 1)
 	write(4, 0, 'Hello')
-	write(7, 1, 'REXQUALIS!')
+	write(7, 1, 'World!')

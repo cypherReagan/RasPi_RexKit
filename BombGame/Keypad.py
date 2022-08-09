@@ -62,6 +62,7 @@ class Keypad(object):
         return keyActivity
     #Hardware scan ,the result store in bitMap
     def scanKeys(self):
+        #print("DEBUG_JW: run scanKeys()")
         #Re-intialize the row pins. Allows sharing these pins with other hardware.
         for pin_r in self.rowPins:
             GPIO.setup(pin_r,GPIO.IN,pull_up_down = GPIO.PUD_UP)
@@ -176,7 +177,7 @@ class Keypad(object):
         else:
             return False
 
-################ EXAMPLE CODE START HERE ################
+################ DRIVER CODE START HERE ################
 LED_GREEN = 36  #the BOARD pin (BCM16) connect to LED
 LED_RED = 37    #the BOARD pin (BCM26) connect to LED
 
@@ -191,7 +192,7 @@ password=['1','9','7','4']
 testword=['0','0','0','0']
 KeyIndex=0
 
-rowsPins = [12,16,18,22]
+rowsPins = [12,16,18,22] #BOARD pin numbering
 colsPins = [19,15,13,11]
 
 def check():
@@ -204,6 +205,8 @@ def setup():
     LED.setup()
     LED.init(LED_GREEN)
     LED.init(LED_RED)
+    LED.enable(LED_GREEN)
+    LED.enable(LED_RED)
     
     LCD1602.init(0x27, 1)    # init(slave address, background light)
     LCD1602.clear()
@@ -211,8 +214,13 @@ def setup():
     writeLCD(2, 1, 'Enter password')
     time.sleep(2)
 
+def clearLEDs():
+    GPIO.output(LED_GREEN, GPIO.HIGH)
+    GPIO.output(LED_RED, GPIO.HIGH)
+
 def destroy():
     LCD1602.clear()
+    clearLEDs()
     
 def writeLCD(xPos, yPos, msgStr):
     LCD1602.write(xPos, yPos, msgStr)
@@ -229,10 +237,11 @@ def loop():
     
     global KeyIndex
     global LENS
+    
     while(True):
         key = keypad.getKey()
         if(key != keypad.NULL):
-            LCD1602.clear()
+            destroy()
             writeLCD(0, 0, "Enter password:")
             writeLCD(15-KeyIndex,1, "****")
             testword[KeyIndex]=key
@@ -242,12 +251,12 @@ def loop():
                     LCD1602.clear()
                     writeLCD(3, 0, "WRONG KEY!")
                     writeLCD(0, 1, "please try again")
+                    GPIO.output(LED_RED, GPIO.LOW)
                 else:
                     LCD1602.clear()
                     writeLCD(4, 0, "CORRECT!")
                     writeLCD(2, 1, "Bomb Disarmed!")
-                    LED.enable(LED_GREEN)
-                    LED.enable(LED_RED)
+                    GPIO.output(LED_GREEN, GPIO.LOW)
                     print ('...Green LED ON (Pin ',LED_GREEN,')')
             KeyIndex = KeyIndex%LENS
 
