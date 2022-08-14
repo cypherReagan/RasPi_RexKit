@@ -5,8 +5,7 @@ TestLedPin1 = 36  #the BOARD pin (BCM16) connect to LED
 TestLedPin2 = 37  #the BOARD pin (BCM26) connect to LED
 
 def setup(testMode = False):
-    # Set the GPIO modes to BCM Numbering
-    #DEBUG_JW - removed for now
+    # Set the GPIO modes to BOARD Numbering
     GPIO.setmode(GPIO.BOARD)
     
     if (testMode):
