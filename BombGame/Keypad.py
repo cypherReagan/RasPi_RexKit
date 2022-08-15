@@ -44,11 +44,12 @@ class Keypad(object):
         self.setDebounceTime(10)
     #Returns a single key only. Retained for backwards compatibility.
     def getKey(self):
-        single_key = True
+        #DEBUG_JW- deleteme
+        #single_key = True
         if(self.getKeys() and self.key[0].stateChanged and (self.key[0].kstate == self.key[0].PRESSED)):
             print("DEBUG_JW: key = ", self.key[0].kchar)
             return self.key[0].kchar
-        single_key = False
+        #single_key = False
         return self.key[0].NO_KEY
     #Populate the key list.
     def getKeys(self):
@@ -144,24 +145,24 @@ class Keypad(object):
     def setHoldTime(self,ms):
         self.holdTime = ms
     #
-    def isPressed(keyChar):
+    def isPressed(self, keyChar):
         for i in range(self.LIST_MAX):
             if(self.key[i].kchar == keyChar):
                 if(self.key[i].kstate == self.self.key[i].PRESSED and self.key[i].stateChanged):
                     return True
         return False
     #
-    def waitForKey():
+    def waitForKey(self):
         kk = Key()
         waitKey = kk.NO_KEY
         while(waitKey == kk.NO_KEY):
             waitKey = getKey()
         return waitKey
 
-    def getState():
+    def getState(self):
         return self.key[0].kstate
     #
-    def keyStateChanged():
+    def keyStateChanged(self):
         return self.key[0].stateChanged
 
     def bitWrite(self,x,n,b):
@@ -214,7 +215,7 @@ def destroy(testMode = False):
     
     
 
-def loop(testMode = True):
+def loop():
     
     keypad = Keypad(keys,rowsPins,colsPins,ROWS,COLS)
     keypad.setDebounceTime(50)
@@ -232,7 +233,7 @@ def loop(testMode = True):
             print("keys = ", testword)
             KeyIndex+=1
             if (KeyIndex is LENS):
-                if (check() is 0):
+                if (check() == 0):
                     print("WRONG KEY!")
                     print("please try again")
                 else:

@@ -38,10 +38,11 @@ keys =     ['1','2','3','A',
 password=['1','9','7','4']
 testword=['0','0','0','0']
 KeyIndex=0
-
 # Keypad pins
 rowsPins = [12,16,18,22] #BOARD pin numbering
 colsPins = [19,15,13,11]
+
+BUZZER_TIMEOUT = 5
 
 def checkPW():
     for i in range(0,LENS):
@@ -53,8 +54,6 @@ def setup():
     LED.setup()
     LED.init(LED_GREEN)
     LED.init(LED_RED)
-    LED.enable(LED_GREEN)
-    LED.enable(LED_RED)
     ActiveBuzzer.setup(BUZZER_PIN)
     
     LCD1602.init(0x27, 1)    # init(slave address, background light)
@@ -64,13 +63,19 @@ def setup():
     time.sleep(2)
 
 def clearLEDs():
-    GPIO.output(LED_GREEN, GPIO.HIGH)
-    GPIO.output(LED_RED, GPIO.HIGH)
+    LED.clear(LED_GREEN)
+    LED.clear(LED_RED)
 
 def clearHW():
     LCD1602.clear()
     clearLEDs()
     ActiveBuzzer.clear(BUZZER_PIN)
+    
+def destroy():
+    print("--- Program Terminated ---")
+    clearHW()
+    # Release resource(s)
+    GPIO.cleanup()
     
 def writeLCD(xPos, yPos, msgStr):
     LCD1602.write(xPos, yPos, msgStr)
@@ -86,7 +91,10 @@ def loop():
     global KeyIndex
     global LENS
     
-    while(True):
+    done = False
+    tryCount = 3
+    
+    while(not done):
         key = keypad.getKey()
         if(key != keypad.NULL):
             clearHW()
@@ -96,26 +104,35 @@ def loop():
             KeyIndex+=1
             if (KeyIndex is LENS):
                 if (checkPW() == 0):
+                    LED.enable(LED_RED)
                     LCD1602.clear()
                     writeLCD(3, 0, "WRONG KEY!")
-                    writeLCD(0, 1, "please try again")
-                    GPIO.output(LED_RED, GPIO.LOW)
-                    ActiveBuzzer.Activate(BUZZER_PIN, 5)
+
+                    tryCount = tryCount - 1
+                    if (tryCount == 0):
+                        ActiveBuzzer.Activate(BUZZER_PIN, BUZZER_TIMEOUT)
+                        done = True
+                    else:
+                        msgStr = "{} {}".format("tries left: ", tryCount)
+                        writeLCD(0, 1, msgStr)
+                    
                 else:
                     LCD1602.clear()
                     writeLCD(4, 0, "CORRECT!")
                     writeLCD(2, 1, "Bomb Disarmed!")
-                    GPIO.output(LED_GREEN, GPIO.LOW)
+                    LED.enable(LED_GREEN)
                     print ('...Green LED ON (Pin ',LED_GREEN,')')
+                    
+                    done = True
+                    time.sleep(5)
             KeyIndex = KeyIndex%LENS
+    
+    destroy()
             
             
 if __name__ == '__main__':     # Program start from here
     try:
         setup()
         loop()
-    except KeyboardInterrupt:  # When 'Ctrl+C' is pressed, the program destroy() will be  executed.
-        print("--- Program Terminated ---")
-        clearHW()
-        # Release resource(s)
-        GPIO.cleanup()
+    except KeyboardInterrupt:  # When 'Ctrl+C' is pressed, end program.
+        destroy()

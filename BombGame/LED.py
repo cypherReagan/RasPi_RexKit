@@ -44,9 +44,9 @@ def loop(ledPin, testMode = True):
 # Define a enable function to turn on LED
 def enable(ledPin):
     # Turn off LED
-    GPIO.output(ledPin, GPIO.HIGH)
+    GPIO.output(ledPin, GPIO.LOW)
 
-# Define a destroy function to turn off LED
+# Define a clear function to turn off LED
 def clear(ledPin):
     # Turn off LED
     GPIO.output(ledPin, GPIO.HIGH)
