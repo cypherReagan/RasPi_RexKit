@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import RPi.GPIO as GPIO  #the Pi pin library
 import time  #the time library of system time
+
+TESTMODE = True
 TestLedPin1 = 36  #the BOARD pin (BCM16) connect to LED
 TestLedPin2 = 37  #the BOARD pin (BCM26) connect to LED
 
@@ -38,9 +40,6 @@ def loop(ledPin, testMode = True):
             GPIO.output(ledPin, GPIO.HIGH)
         time.sleep(1)
 
-# Define a main function for main process
-def main():
-    x = 1
 
 # Define a enable function to turn on LED
 def enable(ledPin):
@@ -53,7 +52,7 @@ def clear(ledPin):
     GPIO.output(ledPin, GPIO.HIGH)
 
 # Define a destroy function for clean up everything after the script finished
-def destroy(ledPin, testMode = True):
+def destroy(ledPin, testMode = False):
     # Turn off LED
     if (testMode):
         clear(TestLedPin1)
@@ -72,5 +71,4 @@ if __name__ == '__main__':
 
     # When 'Ctrl+C' is pressed, the program destroy() will be  executed.
     except KeyboardInterrupt:
-        destroy(0)
-        destroy(0)
+        destroy(0, TESTMODE)

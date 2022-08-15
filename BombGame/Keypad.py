@@ -2,8 +2,7 @@
 
 import RPi.GPIO as GPIO
 import time
-import LCD1602
-import LED
+
 
 ##################### HERE IS THE KEYPAD LIBRARY TRANSPLANTED FROM Arduino ############
 #class Key:Define some of the properties of Key
@@ -177,10 +176,9 @@ class Keypad(object):
         else:
             return False
 
-################ DRIVER CODE START HERE ################
-LED_GREEN = 36  #the BOARD pin (BCM16) connect to LED
-LED_RED = 37    #the BOARD pin (BCM26) connect to LED
+################ SIMPLE KEYPAD START HERE ################
 
+TESTMODE = True
 ROWS = 4
 COLS = 4
 LENS = 4
@@ -201,36 +199,22 @@ def check():
             return 0
     return 1
 
-def setup():
-    LED.setup()
-    LED.init(LED_GREEN)
-    LED.init(LED_RED)
-    LED.enable(LED_GREEN)
-    LED.enable(LED_RED)
-    
-    LCD1602.init(0x27, 1)    # init(slave address, background light)
-    LCD1602.clear()
-    writeLCD(0, 0, 'WELCOME!')
-    writeLCD(2, 1, 'Enter password')
+def setup():  
+    print('WELCOME to the simple keypad!')
+    print('Enter password')
     time.sleep(2)
 
-def clearLEDs():
-    GPIO.output(LED_GREEN, GPIO.HIGH)
-    GPIO.output(LED_RED, GPIO.HIGH)
-
-def destroy():
-    LCD1602.clear()
-    clearLEDs()
+def destroy(testMode = False):
+    print('KeyPad Destroy')
     
-def writeLCD(xPos, yPos, msgStr):
-    LCD1602.write(xPos, yPos, msgStr)
-    print(msgStr)
+    if (testMode):
+        # Release resource
+        GPIO.cleanup()
+    
     
     
 
-def loop():
-    global LED_GREEN
-    global LED_RED
+def loop(testMode = True):
     
     keypad = Keypad(keys,rowsPins,colsPins,ROWS,COLS)
     keypad.setDebounceTime(50)
@@ -242,22 +226,17 @@ def loop():
         key = keypad.getKey()
         if(key != keypad.NULL):
             destroy()
-            writeLCD(0, 0, "Enter password:")
-            writeLCD(15-KeyIndex,1, "****")
+            print("Enter password:")
+            #writeLCD(15-KeyIndex,1, "****")
             testword[KeyIndex]=key
+            print("keys = ", testword)
             KeyIndex+=1
             if (KeyIndex is LENS):
                 if (check() is 0):
-                    LCD1602.clear()
-                    writeLCD(3, 0, "WRONG KEY!")
-                    writeLCD(0, 1, "please try again")
-                    GPIO.output(LED_RED, GPIO.LOW)
+                    print("WRONG KEY!")
+                    print("please try again")
                 else:
-                    LCD1602.clear()
-                    writeLCD(4, 0, "CORRECT!")
-                    writeLCD(2, 1, "Bomb Disarmed!")
-                    GPIO.output(LED_GREEN, GPIO.LOW)
-                    print ('...Green LED ON (Pin ',LED_GREEN,')')
+                    print("CORRECT!")
             KeyIndex = KeyIndex%LENS
 
 
@@ -268,4 +247,4 @@ if __name__ == '__main__':     # Program start from here
         setup()
         loop()
     except KeyboardInterrupt:  # When 'Ctrl+C' is pressed, the program destroy() will be  executed.
-        destroy()
+        destroy(TESTMODE)
