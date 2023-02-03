@@ -6,6 +6,7 @@ import LCD1602
 import LED
 import Keypad as KP
 import ActiveBuzzer
+import Password as PW
 
 """
 This program requires RexKit HW for the following:
@@ -17,10 +18,14 @@ This program requires RexKit HW for the following:
 
 
 DEBUG_JW - TODO:
-1.  Create more complexity by randomly generating PW,
-    allowing more tries, and giving fedback after each try.
+1.  Need to indicate multiple chars in word
     
-    Feedback example: [X, C, C, X]
+    Feedback example: [N, Y, Y, I]
+    
+    
+2.  Implement countdown timer.
+
+3.  Password obj constructor should have option to intit with given PW string
 """
 
 ################ DRIVER CODE START HERE ################
@@ -31,12 +36,10 @@ BUZZER_PIN = 29 #the BOARD pin (BCM05) connect to active buzzer
 ROWS = 4
 COLS = 4
 LENS = 4
-keys =     ['1','2','3','A',
-            '4','5','6','B',
-            '7','8','9','C',
-            '*','0','#','D']
-password=['1','9','7','4']
-testword=['0','0','0','0']
+
+passwordTest=['1','9','7','4']
+ThePassword = PW.Password(LENS, PW.KEYS)
+Testword=['0','0','0','0']
 KeyIndex=0
 # Keypad pins
 rowsPins = [12,16,18,22] #BOARD pin numbering
@@ -44,11 +47,29 @@ colsPins = [19,15,13,11]
 
 BUZZER_TIMEOUT = 5
 
-def checkPW():
+def checkPW_test():
     for i in range(0,LENS):
-        if(password[i]!=testword[i]):
+        if(passwordTest[i]!=Testword[i]):
             return 0
     return 1
+
+def checkPW():
+    resultWord = ThePassword.getCompareResult(Testword)
+    retNum = 0
+    retWord = "["
+    
+    if (PW.IsCorrectResult(resultWord)):
+        retNum = 1
+        
+    # make it look good
+    for i in range(0, len(resultWord)):
+        retWord += resultWord[i]
+        if (i < len(resultWord)-1):
+            retWord += ", "
+    
+    retWord += ']'
+    
+    return retNum, retWord
 
 def setup():
     LED.setup()
@@ -85,7 +106,7 @@ def loop():
     global LED_GREEN
     global LED_RED
     
-    keypad = KP.Keypad(keys,rowsPins,colsPins,ROWS,COLS)
+    keypad = KP.Keypad(PW.KEYS,rowsPins,colsPins,ROWS,COLS)
     keypad.setDebounceTime(50)
     
     global KeyIndex
@@ -98,15 +119,17 @@ def loop():
         key = keypad.getKey()
         if(key != keypad.NULL):
             clearHW()
-            writeLCD(0, 0, "Enter password:")
+            writeLCD(0, 0, "Enter :")
             writeLCD(15-KeyIndex,1, "****")
-            testword[KeyIndex]=key
+            Testword[KeyIndex]=key
             KeyIndex+=1
             if (KeyIndex is LENS):
-                if (checkPW() == 0):
+                resultNum, resultWord = checkPW()
+                if (resultNum == 0):
                     LED.enable(LED_RED)
                     LCD1602.clear()
-                    writeLCD(3, 0, "WRONG KEY!")
+                    #writeLCD(3, 0, "WRONG KEY!")
+                    writeLCD(2, 0, resultWord)
 
                     tryCount = tryCount - 1
                     if (tryCount == 0):
