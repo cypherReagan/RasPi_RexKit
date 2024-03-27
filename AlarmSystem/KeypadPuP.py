@@ -1,8 +1,12 @@
 # import required libraries
 import RPi.GPIO as GPIO
 import time
+import threading
+#import multiprocessing
+from queue import Queue
 
-# https://www.digikey.com/en/maker/blogs/2021/how-to-connect-a-keypad-to-a-raspberry-pi
+# Based on concept from:
+#   https://www.digikey.com/en/maker/blogs/2021/how-to-connect-a-keypad-to-a-raspberry-pi
 
 # Pins for Raspi4
 GPIO_MODE = GPIO.BCM
@@ -20,11 +24,11 @@ ROW_PINS = [PIN_L1,PIN_L2,PIN_L3,PIN_L4]
 COL_PINS = [PIN_C1,PIN_C2,PIN_C3,PIN_C4]
 
 HOLD_TIME = 0.3
-TESTMODE = True
+
 ROWS = 4
 COLS = 4
 LENS = 4
-keys =     ['1','2','3','A',
+KEYS =     ['1','2','3','A',
             '4','5','6','B',
             '7','8','9','C',
             '*','0','#','D']
@@ -44,17 +48,24 @@ class Keypad(object):
     
     #Allows custom keymap, pin configuration, and keypad sizes.
     def __init__(self,usrKeyMap,rowPins,colPins):
-        self.__rowPins = rowPins
-        self.__colPins = colPins
-        self.__numRows = len(rowPins)
-        self.__numCols = len(colPins)
-        self.__keymap = usrKeyMap
-        #DEBUG_JW: TODO - add queue for entered keys
+        try:
+            self.__rowPins = rowPins
+            self.__colPins = colPins
+            self.__numRows = len(rowPins)
+            self.__numCols = len(colPins)
+            self.__keymap = usrKeyMap
+            self.__keyQueue = Queue()
+            
+            # readKey threading
+            self.__readKeysThread = threading.Thread(target=self.pollRows, daemon=True)
+            self.__stopReadFlag = True
+            
+            self.__setupHw()
         
-        self.__setupHw()
+        except:
+            print("ERROR: Keypad init() error!")
 
-
-    # init the GPIO pins
+    # inits the GPIO pins
     # rowPins/colPins must already be initialized
     def __setupHw(self):
         GPIO.setmode(GPIO_MODE)
@@ -66,6 +77,60 @@ class Keypad(object):
         # MUST configure the input pins to use the internal pull-down resistors
         for colPin in self.__colPins:
             GPIO.setup(colPin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+
+
+    def startReadKeys(self, testMode = False):
+        # Accessor for initiating KP read
+        self.__keyQueue.queue.clear()
+        
+        self.__stopReadFlag = False
+        self.__readKeysThread.start()
+
+        if (testMode):
+            while (True):
+                if (not self.__keyQueue.empty()):
+                    print(self.__keyQueue.get())
+
+    def stopReadKeys(self):
+        if (not self.__stopReadFlag):
+            print("DEBUG_JW: Stopping __readKeysProc...")
+            self.__stopReadFlag = True
+            self.__readKeysThread.join()
+            
+
+    def getKey(self):
+        retKey = ""
+        if (not self.__keyQueue.empty()):
+            retKey = self.__keyQueue.get()
+            
+        return retKey
+
+    def pollRows(self):
+        while True:
+            if (self.__stopReadFlag):
+                break
+            else:
+                # reads each keypad row
+                char = self.readLine(self.__rowPins[0], ["1","2","3","A"])
+                if (not char == ""):
+                    self.__keyQueue.put(char)
+                
+                char = self.readLine(self.__rowPins[1], ["4","5","6","B"])
+                if (not char == ""):
+                    self.__keyQueue.put(char)
+                
+                char = self.readLine(self.__rowPins[2], ["7","8","9","C"])
+                if (not char == ""):
+                    self.__keyQueue.put(char)
+                
+                char = self.readLine(self.__rowPins[3], ["*","0","#","D"])
+                if (not char == ""):
+                    self.__keyQueue.put(char)
+
+                time.sleep(HOLD_TIME)
+ 
+        
+
 
     # Function sends out a single pulse to one of the rows of the keypad
     # and then checks each column for changes.
@@ -91,9 +156,10 @@ class Keypad(object):
         
     
 ################ SIMPLE KEYPAD START HERE ################
+TestKeyPad = Keypad(KEYS,ROW_PINS,COL_PINS)
 
-
-def testSetup_OLD():  
+"""
+def testSetup_OLD_JW():  
     print('WELCOME to the simple keypad!')
     print('Enter password')
     time.sleep(2)
@@ -114,6 +180,7 @@ def testSetup_OLD():
     GPIO.setup(C3, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
     GPIO.setup(C4, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
+# DEBUG_JW - remove when done
 def readLine_OLD(line, characters):
     
     retChar = ""
@@ -129,7 +196,7 @@ def readLine_OLD(line, characters):
     GPIO.output(line, GPIO.LOW)
     
     return retChar
-
+"""
 
 def simpleTestLoop(keypad):
     while True:
@@ -150,12 +217,6 @@ def simpleTestLoop(keypad):
         if (not char == ""):
             print(char)
 
-        
-        #print (readLine(L1, ["1","2","3","A"]))
-        #print (readLine(L2, ["4","5","6","B"]))
-        #print (readLine(L3, ["7","8","9","C"]))
-        #print (readLine(L4, ["*","0","#","D"]))
-        ##time.sleep(0.1)
         time.sleep(HOLD_TIME)
  
         
@@ -167,11 +228,18 @@ def destroy(testMode = False):
         GPIO.cleanup()
     
 if __name__ == '__main__':     # Program start from here
+    
+    TESTMODE = True
+    
     try:
-        print('WELCOME to the simple keypad!')
+        print('WELCOME to the simple keypad test (pull-up version)!')
         print('Enter password')
         time.sleep(2)
-        keypad = Keypad(keys,ROW_PINS,COL_PINS)
-        simpleTestLoop(keypad)
+        #TestKeyPad = Keypad(KEYS,ROW_PINS,COL_PINS)
+        
+        #simpleTestLoop(keypad)
+        TestKeyPad.startReadKeys(TESTMODE)
+        
     except KeyboardInterrupt:  # When 'Ctrl+C' is pressed, the program destroy() will be  executed.
+        TestKeyPad.stopReadKeys()
         destroy(TESTMODE)
