@@ -8,20 +8,6 @@ from queue import Queue
 # Based on concept from:
 #   https://www.digikey.com/en/maker/blogs/2021/how-to-connect-a-keypad-to-a-raspberry-pi
 
-# Pins for Raspi4
-GPIO_MODE = GPIO.BCM
-PIN_L1 = 18 #Pin 12 on board 
-PIN_L2 = 23 #Pin 16 on board 
-PIN_L3 = 24 #Pin 18 on board 
-PIN_L4 = 25 #Pin 22 on board
-
-PIN_C1 = 10 #Pin 19 on board
-PIN_C2 = 22 #Pin 15 on board
-PIN_C3 = 27 #Pin 13 on board
-PIN_C4 = 17 #Pin 11 on board
-
-ROW_PINS = [PIN_L1,PIN_L2,PIN_L3,PIN_L4]
-COL_PINS = [PIN_C1,PIN_C2,PIN_C3,PIN_C4]
 
 HOLD_TIME = 0.3
 
@@ -92,14 +78,15 @@ class Keypad(object):
                     print(self.__keyQueue.get())
 
     def stopReadKeys(self):
+        # Accessor for ending the KP read thread
         if (not self.__stopReadFlag):
             print("DEBUG_JW: Stopping __readKeysProc...")
             self.__stopReadFlag = True
             self.__readKeysThread.join()
             
-
+    #Returns a single key only.
     def getKey(self):
-        retKey = ""
+        retKey = self.NULL
         if (not self.__keyQueue.empty()):
             retKey = self.__keyQueue.get()
             
@@ -156,6 +143,33 @@ class Keypad(object):
         
     
 ################ SIMPLE KEYPAD START HERE ################
+# Pins for Raspi4
+"""
+GPIO_MODE = GPIO.BCM
+PIN_L1 = 18 #Pin 12 on board 
+PIN_L2 = 23 #Pin 16 on board 
+PIN_L3 = 24 #Pin 18 on board 
+PIN_L4 = 25 #Pin 22 on board
+
+PIN_C1 = 10 #Pin 19 on board
+PIN_C2 = 22 #Pin 15 on board
+PIN_C3 = 27 #Pin 13 on board
+PIN_C4 = 17 #Pin 11 on board
+"""
+GPIO_MODE = GPIO.BOARD
+PIN_L1 = 12 #Pin 18 BCM 
+PIN_L2 = 16 #Pin 23 BCM 
+PIN_L3 = 18 #Pin 24 BCM
+PIN_L4 = 22 #Pin 25 BCM
+
+PIN_C1 = 19 #Pin 10 BCM
+PIN_C2 = 15 #Pin 22 BCM
+PIN_C3 = 13 #Pin 27 BCM
+PIN_C4 = 11 #Pin 17  BCM
+
+ROW_PINS = [PIN_L1,PIN_L2,PIN_L3,PIN_L4]
+COL_PINS = [PIN_C1,PIN_C2,PIN_C3,PIN_C4]
+
 TestKeyPad = Keypad(KEYS,ROW_PINS,COL_PINS)
 
 """
@@ -198,7 +212,7 @@ def readLine_OLD(line, characters):
     return retChar
 """
 
-def simpleTestLoop(keypad):
+def simpleTestLoop__OLD(keypad):
     while True:
         # call the readLine function for each row of the keypad
         char = keypad.readLine(ROW_PINS[0], ["1","2","3","A"])
@@ -219,6 +233,16 @@ def simpleTestLoop(keypad):
 
         time.sleep(HOLD_TIME)
  
+ 
+def simpleTestLoop(keypad):
+     
+    keypad.startReadKeys()
+    
+    while True:
+        key = keypad.getKey()
+        if (key != keypad.NULL):
+            print("key = ", key)
+        
         
 def destroy(testMode = False):
     print('KeyPad Destroy')
@@ -235,10 +259,9 @@ if __name__ == '__main__':     # Program start from here
         print('WELCOME to the simple keypad test (pull-up version)!')
         print('Enter password')
         time.sleep(2)
-        #TestKeyPad = Keypad(KEYS,ROW_PINS,COL_PINS)
+        #TestKeyPad = Keypad(KEYS,ROW_PINS,COL_PINS) # this global is declared above
         
-        #simpleTestLoop(keypad)
-        TestKeyPad.startReadKeys(TESTMODE)
+        simpleTestLoop(TestKeyPad)
         
     except KeyboardInterrupt:  # When 'Ctrl+C' is pressed, the program destroy() will be  executed.
         TestKeyPad.stopReadKeys()

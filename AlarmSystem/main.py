@@ -4,10 +4,10 @@ import RPi.GPIO as GPIO
 import time
 import LCD1602
 import LED
-#import Keypad as KP
+import KeypadPuP as KP
 import ActiveBuzzer
 import Password as PW
-import RFID_Reader as Reader
+#import RFID_Reader as Reader
 
 """
 This Alarm System program requires RexKit HW for the following:
@@ -41,6 +41,19 @@ The LCD will show user options and password feedback.
 """
 
 ################ DRIVER CODE START HERE ################
+PIN_L1 = 12 #Pin BCM18 
+PIN_L2 = 16 #Pin BCM23 
+PIN_L3 = 18 #Pin BCM24
+PIN_L4 = 22 #Pin BCM25
+
+PIN_C1 = 19 #Pin BCM10
+PIN_C2 = 15 #Pin BCM22
+PIN_C3 = 13 #Pin BCM27
+PIN_C4 = 11 #Pin BCM17
+
+ROW_PINS = [PIN_L1,PIN_L2,PIN_L3,PIN_L4]
+COL_PINS = [PIN_C1,PIN_C2,PIN_C3,PIN_C4]
+
 LED_GREEN = 36  #the BOARD pin (BCM16) connect to LED
 LED_RED = 37    #the BOARD pin (BCM26) connect to LED
 BUZZER_PIN = 29 #the BOARD pin (BCM05) connect to active buzzer
@@ -48,6 +61,10 @@ BUZZER_PIN = 29 #the BOARD pin (BCM05) connect to active buzzer
 ROWS = 4
 COLS = 4
 LENS = 4
+KEYS =     ['1','2','3','A',
+            '4','5','6','B',
+            '7','8','9','C',
+            '*','0','#','D']
 
 passwordTest=['1','9','7','4']
 ThePassword = PW.Password(LENS, PW.KEYS)
@@ -114,12 +131,19 @@ def writeLCD(xPos, yPos, msgStr):
     LCD1602.write(xPos, yPos, msgStr)
     print(msgStr)
     
+def processWord():
+    
+    done = False
+    
+    return done
+    
 def loop():
     global LED_GREEN
     global LED_RED
     
     #keypad = KP.Keypad(PW.KEYS,rowsPins,colsPins,ROWS,COLS)
     #keypad.setDebounceTime(50)
+    keypad = KP.Keypad(KEYS,ROW_PINS,COL_PINS)
     
     global KeyIndex
     global LENS
@@ -127,9 +151,12 @@ def loop():
     done = False
     tryCount = 3
     
+    keypad.startReadKeys()
+    
     while(not done):
         key = keypad.getKey()
         if(key != keypad.NULL):
+            print("DEBUG_JW: key = ", key)
             clearHW()
             writeLCD(0, 0, "Enter :")
             writeLCD(15-KeyIndex,1, "****")
@@ -160,6 +187,10 @@ def loop():
                     
                     done = True
                     time.sleep(5)
+                    
+            if (done):
+                keypad.stopReadKeys()
+                    
             KeyIndex = KeyIndex%LENS
     
     destroy()
