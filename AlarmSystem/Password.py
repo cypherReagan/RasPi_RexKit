@@ -11,29 +11,42 @@ TEST_PW_LEN = 4
 class PasswordData(object):
     
     #constructor
-    def __init__(self, pwLen, pwKeys):
+    def __init__(self, pwLen, pwKeys, initialPW = []):
         self.password=[]
         self.passwordDict={}
+        randomWord = True
 
         if (pwLen <= 0):
             print("ERROR: invalid PW len ",pwLen)
         else:
-            count = 0
-            while (count < pwLen):
-                count += 1
-                self.password.append('0')
+            if (len(initialPW) == pwLen):
+                # use this for data
+                for key in initialPW:
+                    self.password.append(key)
+                    
+                randomWord = False
+                print("DEBUG_JW: PasswordData() - init from given PW")
+            else:
+                # generate our own word
+                print("DEBUG_JW: PasswordData() - init from generated PW")
                 
-            self.generateWord(pwKeys)
+                count = 0
+                while (count < pwLen):
+                    count += 1
+                    self.password.append('0') # will be populated randomly
+                
+            self.generateWord(pwKeys, randomWord)
 
-    def generateWord(self, pwKeys):
+    def generateWord(self, pwKeys, randomWord = True):
         pwLen = len(self.password)
         keysLen = len(pwKeys)-1
         
         for i in range(pwLen):
-            rand = random.randint(0, keysLen)
-            self.password[i] = pwKeys[rand]
+            if (randomWord):
+                rand = random.randint(0, keysLen)
+                self.password[i] = pwKeys[rand]
             
-            print("DEBUG_JW: new pw key = ",pwKeys[rand])
+            print("DEBUG_JW: new pw key = ",self.password[i])
             
             # is generated key in dict?
             # if so, update keyVal with count, else add key
@@ -56,9 +69,9 @@ class Password(object):
     INCORRECT_PLACE_CHAR = 'I'
     
     #constructor
-    def __init__(self, pwLen, pwKeys):
+    def __init__(self, pwLen, pwKeys, initialPW = []):
         self.__password=[]
-        self.__data = PasswordData(pwLen, pwKeys)
+        self.__data = PasswordData(pwLen, pwKeys, initialPW)
 
     def printWord(self):
         print("PW:\t", self.__data.password)
@@ -126,20 +139,31 @@ def guessPW(testPW, testWord):
 
 
 def PwTest():
-    testPW = Password(TEST_PW_LEN, KEYS)
-    testPW.printWord()
+    # generated PW test
+    print("--- RANDOMLY GENERATED PASSWORD---")
+    testPwGen = Password(TEST_PW_LEN, KEYS)
+    testPwGen.printWord()
     print("\n")
     
 
-    guessPW(testPW, ['0','0','0','0'])
-    guessPW(testPW, ['1','1','1','1'])
-    guessPW(testPW, ['2','2','2','2'])
-    guessPW(testPW, ['1','2','3','4'])
-    guessPW(testPW, ['A','#','B','C'])
+    guessPW(testPwGen, ['0','0','0','0'])
+    guessPW(testPwGen, ['1','1','1','1'])
+    guessPW(testPwGen, ['2','2','2','2'])
+    guessPW(testPwGen, ['1','2','3','4'])
+    guessPW(testPwGen, ['A','#','B','C'])
     
+    #non-generated PW test
+    print("--- SUPPLIED MASTER PASSWORD---")
+    masterPW = ['1','2','3','4']
+    testPw = Password(TEST_PW_LEN, KEYS, masterPW)
+    testPw.printWord()
+    print("\n")
 
-
-
+    guessPW(testPw, ['0','0','0','0'])
+    guessPW(testPw, ['1','1','1','1'])
+    guessPW(testPw, ['2','2','2','2'])
+    guessPW(testPw, ['1','2','3','4'])
+    guessPW(testPw, ['A','#','B','C'])
 
 if __name__ == '__main__':     # Program start from here
     try:

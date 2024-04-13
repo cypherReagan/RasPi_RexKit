@@ -15,7 +15,7 @@ This Alarm System program requires RexKit HW for the following:
 - LEDs (Project 1)
 - Active Buzzer (Project 4)
 - LCD (I2C LCD1602 - Project 13)
-- 4x4 Matrix Membrane (Keypad - Project 14)
+- 4x4 Matrix Membrane (Keypad - Project 14) - using internal pull-up implementation of this
 - Light Sensor (HC-SR501 PIR SENSOR - Project 24)
 - RFID Module (Project 30)
 
@@ -28,12 +28,13 @@ DEBUG_JW - TODO:
     
 2.  (NOPE) Implement countdown timer.
 
-3.  Password obj constructor should have option to init with given PW string
+3.  (DONE) Password obj constructor should have option to init with given PW string
 
-4. Implement LCD user menu. Options to setup (write RFID card), arm, disarm system.
+4. Implement LCD user menu. Options to setup (write RFID card), arm, disarm system, set master PW.
 
 5. Incorporate motion sensor in alarm system
 
+6. Feature to save master PW to disk
 
 The system will allow user to setup and set the system password.
 The LCD will show user options and password feedback.
@@ -68,11 +69,13 @@ KEYS =     ['1','2','3','A',
 
 passwordTest=['1','9','7','4']
 ThePassword = PW.Password(LENS, PW.KEYS)
-Testword=['0','0','0','0']
-KeyIndex=0
+Testword=['0','0','0','0'] #DEBUG_JW - DELETEME
+Masterword=['0','0','0','0']
+#KeyIndex=0#DEBUG_JW - DELETEME
 # Keypad pins
-rowsPins = [12,16,18,22] #BOARD pin numbering
-colsPins = [19,15,13,11]
+ROW_PINS = [12,16,18,22] #BOARD pin numbering
+COL_PINS = [19,15,13,11]
+TheKeypad = KP.Keypad(KEYS,ROW_PINS,COL_PINS)
 
 BUZZER_TIMEOUT = 5
 
@@ -136,33 +139,61 @@ def processWord():
     done = False
     
     return done
+   
+# Prompts user for the master system password.
+# If successful, returns word array 
+def getMasterUserWord(keypad):
+
+    done = False
+    keyIndex = 0
+    word = ['','','','']
     
-def loop():
+    clearHW()
+    
+    promptStr = "Enter :"
+    promptIndex = len(promptStr)
+    writeLCD(0, 0, promptStr) # add entered key after prompt
+    
+    
+    while(not done):
+        key = keypad.getKey()
+        if(key != keypad.NULL):
+            writeLCD(promptIndex+keyIndex, 0, key) # add entered key after prompt
+            
+            word[keyIndex]=key
+            keyIndex+=1
+            print("DEBUG_JW: key = ", key, ", keyIndex = ", keyIndex)
+            if (keyIndex is LENS):
+                print("DEBUG_JW: getMasterUserPw() - returning PW")
+                return word
+            
+   
+def alarmLoop(keypad):
     global LED_GREEN
     global LED_RED
+    global ThePassword
     
-    #keypad = KP.Keypad(PW.KEYS,rowsPins,colsPins,ROWS,COLS)
-    #keypad.setDebounceTime(50)
-    keypad = KP.Keypad(KEYS,ROW_PINS,COL_PINS)
-    
-    global KeyIndex
     global LENS
     
     done = False
     tryCount = 3
+    keyIndex = 0
     
     keypad.startReadKeys()
+    masterWord = getMasterUserWord(keypad)
+    ThePassword = PW.Password(LENS, PW.KEYS, masterWord)
+    LCD1602.clear()
     
     while(not done):
         key = keypad.getKey()
         if(key != keypad.NULL):
             print("DEBUG_JW: key = ", key)
             clearHW()
-            writeLCD(0, 0, "Enter :")
-            writeLCD(15-KeyIndex,1, "****")
-            Testword[KeyIndex]=key
-            KeyIndex+=1
-            if (KeyIndex is LENS):
+            writeLCD(0, 0, "Enter:")
+            writeLCD(15-keyIndex,1, "****")
+            Testword[keyIndex]=key
+            keyIndex+=1
+            if (keyIndex is LENS):
                 resultNum, resultWord = checkPW()
                 if (resultNum == 0):
                     LED.enable(LED_RED)
@@ -188,17 +219,18 @@ def loop():
                     done = True
                     time.sleep(5)
                     
+            keyIndex = keyIndex%LENS
+            
             if (done):
                 keypad.stopReadKeys()
-                    
-            KeyIndex = KeyIndex%LENS
     
-    destroy()
             
             
 if __name__ == '__main__':     # Program start from here
     try:
         setup()
-        loop()
+        alarmLoop(TheKeypad)
+        destroy()
     except KeyboardInterrupt:  # When 'Ctrl+C' is pressed, end program.
+        TheKeypad.stopReadKeys()
         destroy()
