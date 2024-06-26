@@ -1,9 +1,11 @@
 # import required libraries
-import RPi.GPIO as GPIO
 import time
 import threading
-#import multiprocessing
 from queue import Queue
+import HwSim as HW
+
+if (HW.RASPI):
+    import RPi.GPIO as GPIO
 
 # Based on concept from:
 #   https://www.digikey.com/en/maker/blogs/2021/how-to-connect-a-keypad-to-a-raspberry-pi
@@ -46,7 +48,9 @@ class Keypad(object):
             self.__readKeysThread = threading.Thread(target=self.pollRows, daemon=True)
             self.__stopReadFlag = True
             
-            self.__setupHw()
+            # HW init
+            if (HW.RASPI):
+                self.__setupHw()
         
         except:
             print("ERROR: Keypad init() error!")
@@ -93,31 +97,43 @@ class Keypad(object):
         return retKey
 
     def pollRows(self):
+        
+        simKeyIndex = 0
+        
         while True:
             if (self.__stopReadFlag):
                 break
             else:
-                # reads each keypad row
-                char = self.readLine(self.__rowPins[0], ["1","2","3","A"])
-                if (not char == ""):
-                    self.__keyQueue.put(char)
+                if (HW.RASPI):
+                     # read physical HW
+                    self.readRows()
+                else:
+                    # read from simulation
+                    if (simKeyIndex < len(HW.SimKeys)):
+                        char = HW.SimKeys[simKeyIndex]
+                        self.__keyQueue.put(char)
+                        simKeyIndex += 1
                 
-                char = self.readLine(self.__rowPins[1], ["4","5","6","B"])
-                if (not char == ""):
-                    self.__keyQueue.put(char)
-                
-                char = self.readLine(self.__rowPins[2], ["7","8","9","C"])
-                if (not char == ""):
-                    self.__keyQueue.put(char)
-                
-                char = self.readLine(self.__rowPins[3], ["*","0","#","D"])
-                if (not char == ""):
-                    self.__keyQueue.put(char)
-
-                time.sleep(HOLD_TIME)
  
+    # Function reads each keypad row and queues any keychar
+    def readRows(self):
+        char = self.readLine(self.__rowPins[0], ["1","2","3","A"])
+        if (not char == ""):
+            self.__keyQueue.put(char)
         
+        char = self.readLine(self.__rowPins[1], ["4","5","6","B"])
+        if (not char == ""):
+            self.__keyQueue.put(char)
+        
+        char = self.readLine(self.__rowPins[2], ["7","8","9","C"])
+        if (not char == ""):
+            self.__keyQueue.put(char)
+        
+        char = self.readLine(self.__rowPins[3], ["*","0","#","D"])
+        if (not char == ""):
+            self.__keyQueue.put(char)
 
+        time.sleep(HOLD_TIME)
 
     # Function sends out a single pulse to one of the rows of the keypad
     # and then checks each column for changes.
@@ -156,7 +172,9 @@ PIN_C2 = 22 #Pin 15 on board
 PIN_C3 = 27 #Pin 13 on board
 PIN_C4 = 17 #Pin 11 on board
 """
-GPIO_MODE = GPIO.BOARD
+if (HW.RASPI):
+    GPIO_MODE = GPIO.BOARD
+
 PIN_L1 = 12 #Pin 18 BCM 
 PIN_L2 = 16 #Pin 23 BCM 
 PIN_L3 = 18 #Pin 24 BCM
