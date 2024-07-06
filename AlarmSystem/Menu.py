@@ -19,6 +19,9 @@ BackChar = 'B'
 NextChar = 'C'
 PrevChar = 'D'
 
+MENU_RUN_SELECTION_ERROR = -1
+MENU_RUN_CANCELLED = -2
+
 class MenuData(object):
 
     def __init__(self, name, options, parent = ""):
@@ -101,14 +104,14 @@ class MenuData(object):
         return retVal
 
 class Manager(object):
-"""
-Implementations details:
-Class contains a vector of vectors of MenuData objs. All the sub menus (options) will fall under
-the top menu list (into a sub-list).
-When caller adds a MenuData obj, the mgr will find the parent menu and place it in the proper sub-list.
-When the user navigates to a top/sub menu, the mgr will navigate to the next data item in sub-list.
-It's the callers responsibility to supply the parent menu name and add the menus in the correct order.
-"""
+    """
+    Implementations details:
+    Class contains a vector of vectors of MenuData objs. All the sub menus (options) will fall under
+    the top menu list (into a sub-list).
+    When caller adds a MenuData obj, the mgr will find the parent menu and place it in the proper sub-list.
+    When the user navigates to a top/sub menu, the mgr will navigate to the next data item in sub-list.
+    It's the callers responsibility to supply the parent menu name and add the menus in the correct order.
+    """
 
     def __init__(self):
         try:
@@ -127,17 +130,17 @@ It's the callers responsibility to supply the parent menu name and add the menus
             debug_jw = 1
         
     def run(self):
-        
+        pass
 
-# Shows the options on the LCD and captures selections.
+# Shows the options on the output device and captures selections.
 # Returns index if the user selected valid option
-# Returns -1 if options are invalid
-# Returns -2 if user quits without selecting option
+# Returns MENU_RUN_SELECTION_ERROR if options are invalid
+# Returns MENU_RUN_CANCELLED if user quits without selecting option
 #
 # Assumes the keyPad has started capturing
 def RunOptions(menuTitle, options, keyPad):
     
-    retVal = -1
+    retVal = MENU_RUN_SELECTION_ERROR
     index = 0
     done = False
     optCount = len(options)
@@ -187,7 +190,7 @@ def RunOptions(menuTitle, options, keyPad):
                         break
                     elif (key == BackChar):
                         # user quits
-                        retVal = -2
+                        retVal = MENU_RUN_CANCELLED
                         done = True
                         break
                     
@@ -249,10 +252,10 @@ if __name__ == '__main__':     # Program start from here
                 if (selection == 0):
                     selection = RunOptions("Options", TEST_OPTIONS2, TestKeyPad)
                     
-            elif (selection == -1):
+            elif (selection == MENU_RUN_SELECTION_ERROR):
                 print("Selection ERROR!")
                 done = True
-            elif (selection == -2):
+            elif (selection == MENU_RUN_CANCELLED):
                 print("User Cancelled Top Menu")
                 done = True
             

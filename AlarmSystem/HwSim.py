@@ -1,4 +1,4 @@
-RASPI = False
+RASPI = True
 
 if (RASPI):
     import LCD1602
