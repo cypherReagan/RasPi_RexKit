@@ -14,7 +14,7 @@ Possible Options:
 3. Arm/Disarm System
 """
 
-SelectChar = 'A'
+SelectChar = 'A' # TODO: make const
 BackChar = 'B'
 NextChar = 'C'
 PrevChar = 'D'
@@ -35,6 +35,9 @@ class MenuData(object):
 
     def getName(self):
         return self.__name
+    
+    def getParent(self):
+        return self.__parent
 
     # Shows the options on the LCD and captures selections.
     # Returns index if the user selected valid option
@@ -42,7 +45,7 @@ class MenuData(object):
     # Returns -2 if user quits without selecting option
     #
     # Assumes the keyPad has started capturing
-    def run(menuTitle, keyPad):
+    def run(self, keyPad):
         
         retVal = -1
         index = 0
@@ -66,7 +69,7 @@ class MenuData(object):
                     
                 entry = self.__options[index]
                     
-                HW.writeLCD(0, 0, menuTitle)
+                HW.writeLCD(0, 0, self.__name)
                 msg = "{}. ".format(index+1) + entry
                 
                 HW.writeLCD(0, 1, msg)
@@ -115,7 +118,7 @@ class Manager(object):
 
     def __init__(self):
         try:
-            self.__menuList = List() #???
+            self.__menuList = [] #???
             
         except:
             print("ERROR: Menu Manager init() error!")
@@ -124,12 +127,23 @@ class Manager(object):
     # Else, function places data at the top level
     def addMenu(self, data):
         
-        if (data.parent == ""):
-            self.__menuList.add(data)
-        else:
-            debug_jw = 1
+        parent = data.getParent()
         
-    def run(self):
+        if (parent == ""):
+            self.__menuList.append(data)
+        else:
+            try:
+                parentIndex = self.__menuList.index(parent)
+            
+            except:
+                print("ERROR: Menu Manager addMenu() - could not find parent !", parent)
+            
+            pass
+        
+    
+        
+    def run(self, keypad):
+        self.__menuList[0].run(keypad)
         pass
 
 # Shows the options on the output device and captures selections.
@@ -207,13 +221,17 @@ TestKeyPad = KP.Keypad(KP.KEYS,KP.ROW_PINS,KP.COL_PINS)
 TEST_OPTIONS1 = ["Set Master PW",
                  "Setup Card",
                  "Arm System",
-                 "Disarm System"]
+                 "Disarm System",
+                 "Revoke PW"]
 
 TEST_OPTIONS2 = ["Set PW1",
                  "Set PW2"]
 
-MENU_NAMES = ["Options1", "Options2"]
-MENUS = [TEST_OPTIONS1, TEST_OPTIONS2]
+TEST_OPTIONS3 = ["Setup Card1",
+                 "Setup Card2"]
+
+MENU_NAMES = ["Options1", "Options2", "Options3"]
+MENUS = [TEST_OPTIONS1, TEST_OPTIONS2, TEST_OPTIONS3]
 
 def setup():
     HW.init()
@@ -222,15 +240,18 @@ def destroy():
     print("--- Menu Test Terminated By User ---")
     HW.clearLCD()
 
-def runTestMenu():
+def runTestMenu(keypad):
     menuMgr = Manager()
     
     menu1 = MenuData(MENU_NAMES[0], TEST_OPTIONS1)
-    menu2 = MenuData(MENU-NAMES[1], TEST_OPTIONS2, MENU_NAMES[0])
+    menu2 = MenuData(MENU_NAMES[1], TEST_OPTIONS2, MENU_NAMES[0])
+    menu3 = MenuData(MENU_NAMES[2], TEST_OPTIONS3, MENU_NAMES[1])
     
     menuMgr.addMenu(menu1)
     menuMgr.addMenu(menu2)
+    menuMgr.addMenu(menu3)
     
+    menuMgr.run(keypad)
 
 if __name__ == '__main__':     # Program start from here
     try:
@@ -244,9 +265,13 @@ if __name__ == '__main__':     # Program start from here
         done = False
         selectedMenu = 0
         
+        runTestMenu(TestKeyPad)
+        
+        """
         while (not done):
             selection = RunOptions(MENU_NAMES[selectedMenu], MENUS[selectedMenu], TestKeyPad)
             
+            # DEBUG_JW - this is test driver code. Need to implement this in the Manager.
             if (selection >= 0):
                 print("Top Selection: ", TEST_OPTIONS1[selection])
                 if (selection == 0):
@@ -258,7 +283,7 @@ if __name__ == '__main__':     # Program start from here
             elif (selection == MENU_RUN_CANCELLED):
                 print("User Cancelled Top Menu")
                 done = True
-            
+        """    
         TestKeyPad.stopReadKeys()
         destroy()
     except KeyboardInterrupt:  # When 'Ctrl+C' is pressed, end program.
