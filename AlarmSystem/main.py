@@ -31,10 +31,18 @@ DEBUG_JW - TODO:
 3.  (DONE) Password obj constructor should have option to init with given PW string
 
 4. Implement LCD user menu. Options to setup (write RFID card), arm, disarm system, set master PW.
+    |
+    |-> currently writing Menu  Manager to maintain and navigate menu options.
 
 5. Incorporate motion sensor in alarm system
 
 6. Feature to save master PW to disk
+
+7. Feature to use Snap Circuit alarm IC
+
+8. Feature revoke PW (either typed or RFID)
+
+9. Implement mobile blueDot app to arm/disarm system
 
 The system will allow user to setup and set the system password.
 The LCD will show user options and password feedback.
@@ -141,7 +149,9 @@ def processWord():
     return done
    
 # Prompts user for the master system password.
-# If successful, returns word array 
+# If successful, returns word array
+#
+# Assumes the keyPad has started capturing
 def getMasterUserWord(keypad):
 
     done = False

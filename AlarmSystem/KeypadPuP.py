@@ -109,8 +109,10 @@ class Keypad(object):
                     self.readRows()
                 else:
                     # read from simulation
-                    if (simKeyIndex < len(HW.SimKeys)):
-                        char = HW.SimKeys[simKeyIndex]
+                    simKeys = HW.GetSimKeys()
+                    if (simKeyIndex < len(simKeys)):
+                        char = simKeys[simKeyIndex]
+                        print("DEBUG_JW: Keypad.pollRows() - getting sim key: ", char) # Confused: somehow this causes KP to get the updated keys???
                         self.__keyQueue.put(char)
                         simKeyIndex += 1
                 
@@ -189,68 +191,6 @@ ROW_PINS = [PIN_L1,PIN_L2,PIN_L3,PIN_L4]
 COL_PINS = [PIN_C1,PIN_C2,PIN_C3,PIN_C4]
 
 TestKeyPad = Keypad(KEYS,ROW_PINS,COL_PINS)
-
-"""
-def testSetup_OLD_JW():  
-    print('WELCOME to the simple keypad!')
-    print('Enter password')
-    time.sleep(2)
-    # Initialize the GPIO pins
-
-    GPIO.setwarnings(False)
-    GPIO.setmode(GPIO_MODE)
-
-    GPIO.setup(L1, GPIO.OUT)
-    GPIO.setup(L2, GPIO.OUT)
-    GPIO.setup(L3, GPIO.OUT)
-    GPIO.setup(L4, GPIO.OUT)
-
-    # Make sure to configure the input pins to use the internal pull-down resistors
-
-    GPIO.setup(C1, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-    GPIO.setup(C2, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-    GPIO.setup(C3, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-    GPIO.setup(C4, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-
-# DEBUG_JW - remove when done
-def readLine_OLD(line, characters):
-    
-    retChar = ""
-    GPIO.output(line, GPIO.HIGH)
-    if(GPIO.input(C1) == 1):
-        retChar = (characters[0])
-    if(GPIO.input(C2) == 1):
-        retChar = (characters[1])
-    if(GPIO.input(C3) == 1):
-        retChar = (characters[2])
-    if(GPIO.input(C4) == 1):
-        retChar = (characters[3])
-    GPIO.output(line, GPIO.LOW)
-    
-    return retChar
-"""
-
-def simpleTestLoop__OLD(keypad):
-    while True:
-        # call the readLine function for each row of the keypad
-        char = keypad.readLine(ROW_PINS[0], ["1","2","3","A"])
-        if (not char == ""):
-            print(char)
-        
-        char = keypad.readLine(ROW_PINS[1], ["4","5","6","B"])
-        if (not char == ""):
-            print(char)
-        
-        char = keypad.readLine(ROW_PINS[2], ["7","8","9","C"])
-        if (not char == ""):
-            print(char)
-        
-        char = keypad.readLine(ROW_PINS[3], ["*","0","#","D"])
-        if (not char == ""):
-            print(char)
-
-        time.sleep(HOLD_TIME)
- 
  
 def simpleTestLoop(keypad):
      
@@ -266,8 +206,9 @@ def destroy(testMode = False):
     print('KeyPad Destroy')
     
     if (testMode):
-        # Release resource
-        GPIO.cleanup()
+        if (HW.RASPI):
+            # Release resource
+            GPIO.cleanup()
     
 if __name__ == '__main__':     # Program start from here
     
