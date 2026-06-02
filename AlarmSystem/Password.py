@@ -1,12 +1,11 @@
 import random
+import os
 
 
 KEYS = ['1','2','3','A',
         '4','5','6','B',
         '7','8','9','C',
         '*','0','#','D']
-
-TEST_PW_LEN = 4
 
 class PasswordData(object):
     
@@ -37,6 +36,7 @@ class PasswordData(object):
                 
             self.generateWord(pwKeys, randomWord)
 
+    # Class: PasswordData
     def generateWord(self, pwKeys, randomWord = True):
         pwLen = len(self.password)
         keysLen = len(pwKeys)-1
@@ -70,30 +70,45 @@ class Password(object):
     
     #constructor
     def __init__(self, pwLen, pwKeys, initialPW = []):
+        self.init(pwLen, pwKeys, initialPW)
+        
+    # Class: Password
+    def init(self, pwLen, pwKeys, initialPW = []):
         self.__password=[]
         self.__data = PasswordData(pwLen, pwKeys, initialPW)
-
+        
+    # Class: Password
     def printWord(self):
         print("PW:\t", self.__data.password)
         
+    # Class: Password
+    def getString(self):
+        delimiter = "" # Define a delimiter
+        pwStr = delimiter.join(self.__data.password)
+        return pwStr
+        
+    # Class: Password    
     def checkWholeWord(self, word):
         for i in range(0,len(self.__data.password)):
             if(self.__data.password[i]!=word[i]):
                 return 0
         return 1
     
+    # Class: Password
     def isCharInWord(self, char):
         for i in range(0,len(self.__data.password)):
             if(self.__data.password[i]== char):
                 return True
         return False
     
+    # Class: Password
     def isCharInWord_NEW(self, char, pos, wordDict):
         for i in range(0,len(self.__data.password)):
             if(self.__data.password[i]== char):
                 return True
         return False
-
+    
+    # Class: Password
     def getCompareResult(self, word):
         result = []
         
@@ -113,7 +128,28 @@ class Password(object):
                     result.append(self.INCORRECT_CHAR)
         
         return result
+    
+    # Class: Password
+    def saveToDisk(self, fileName):
 
+        with open(fileName, "w", encoding="utf-8") as file:
+            file.write(self.getString())
+            file.close()
+            
+    # Class: Password
+    def readFromDisk(self, fileName):
+
+        with open(fileName, "r", encoding="utf-8") as file:
+            pwStr = file.read()
+            print("readFromDisk: " + pwStr)
+            file.close()
+            # now update our PasswordData
+            pwList = list(pwStr)
+            self.init(len(pwList), KEYS, pwList)# DEBUG_JW - TODO: don't hardcode KEYS here
+            
+
+
+# Static Methods
 def IsCorrectResult(word):
     
     retVal = True
@@ -128,6 +164,8 @@ def IsCorrectResult(word):
 # ---------
 # Test Code
 # ---------
+PW_TEST_FILE = "PwTestFile.txt"
+
 def destroy():
     print("Cleanup here...")
     
@@ -138,7 +176,7 @@ def guessPW(testPW, testWord):
     print("\n")
 
 
-def PwTest():
+def PwGuessTest():
     # generated PW test
     print("--- RANDOMLY GENERATED PASSWORD---")
     testPwGen = Password(TEST_PW_LEN, KEYS)
@@ -165,9 +203,28 @@ def PwTest():
     guessPW(testPw, ['1','2','3','4'])
     guessPW(testPw, ['A','#','B','C'])
 
+def PwWriteTest():
+    file = os.path.abspath(os.getcwd()) + "/" + PW_TEST_FILE
+    print("PwWriteTest: " + file)
+    
+    masterPW = ['1','2','3','4']
+    testPW = Password(len(masterPW), KEYS, masterPW)
+    testPW.saveToDisk(file)
+    
+def PwReadTest():
+    file = os.path.abspath(os.getcwd()) + "/" + PW_TEST_FILE
+    print("DEBUG_JW: PwReadTest: " + file)
+    
+    masterPW = ['4','3','2','1']
+    testPW = Password(len(masterPW), KEYS, masterPW)
+    testPW.readFromDisk(file)
+    testPW.printWord()
+
 if __name__ == '__main__':     # Program start from here
     try:
-        PwTest()
+        #PwGuessTest()
+        PwWriteTest()
+        PwReadTest()
 
     except KeyboardInterrupt:  # When 'Ctrl+C' is pressed, cleanup.
         destroy()

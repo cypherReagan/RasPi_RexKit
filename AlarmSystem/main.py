@@ -9,6 +9,10 @@ import ActiveBuzzer
 import Password as PW
 #import RFID_Reader as Reader
 
+SW_REV = 0.2
+# 0.1 = implementing Menu Manager to maintain and navigate menu options
+# 0.2 = implemented Password class option to read/write to disk
+
 """
 This Alarm System program requires RexKit HW for the following:
 
@@ -32,11 +36,13 @@ DEBUG_JW - TODO:
 
 4. Implement LCD user menu. Options to setup (write RFID card), arm, disarm system, set master PW.
     |
-    |-> currently writing Menu  Manager to maintain and navigate menu options.
+    |-> currently writing Menu Manager to maintain and navigate menu options.
 
 5. Incorporate motion sensor in alarm system
 
 6. Feature to save master PW to disk
+    |
+    |-> partially implemented in Password class. Still need menu option.
 
 7. Feature to use Snap Circuit alarm IC
 
@@ -238,6 +244,7 @@ def alarmLoop(keypad):
             
 if __name__ == '__main__':     # Program start from here
     try:
+        print("RASPI ALARM SYSTEM\nSW Rev = " + SW_REV)
         setup()
         alarmLoop(TheKeypad)
         destroy()
