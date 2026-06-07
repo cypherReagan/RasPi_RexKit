@@ -1,10 +1,11 @@
-import RPi.GPIO as GPIO
+import HwSim as HW
+if (HW.RASPI):
+    import RPi.GPIO as GPIO
+    from mfrc522 import SimpleMFRC522
 from enum import Enum
 
 
 #https://www.theengineeringprojects.com/2023/01/interface-rfid-module-rc522-with-raspberry-pi-4.html
-
-from mfrc522 import SimpleMFRC522
 
 class Operation(Enum):
     READ = 1
@@ -81,6 +82,9 @@ def TestRfidOps(reader):
 
 
 if __name__ == '__main__':     # Program start from here
-    TheReader = Reader()
-    TestRfidOps(TheReader)
+    if (not HW.RASPI):
+        print("RFID Test not supported in simulation mode")
+    else:
+        TheReader = Reader()
+        TestRfidOps(TheReader)
     

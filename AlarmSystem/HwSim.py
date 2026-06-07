@@ -10,12 +10,18 @@ if (RASPI):
 __SimKeys = []
 if (not RASPI):
     # <Insert Desired Keypad Simulation Sequence Here or Use Accessors To Set Keys>
-    __SimKeys = ['A', 'A'] # menu test: pass
+
+    # Main Test
+    __SimKeys = ['A', 'B', 'C', '1', '2', '3'] # main PW test: pass
+
+    # Menu Test
+    #__SimKeys = ['A', 'A'] # menu test: pass
     #__SimKeys = ['A', 'C', 'A'] # menu test: pass
     #__SimKeys = ['A', 'B'] # menu test: fail
     #__SimKeys = ['B'] # menu test: pass
     #__SimKeys = ['B', 'A'] # menu test: pass
     #__SimKeys = ['C', 'A', 'A'] # menu test: fail
+
 
 def GetSimKeys():
     global __SimKeys

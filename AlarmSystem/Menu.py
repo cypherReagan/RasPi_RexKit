@@ -7,6 +7,12 @@ import HwSim as HW
 if (HW.RASPI):
     import LCD1602
 
+# Driver Menu Actions
+MENU_ACTION_SETPW = 1
+MENU_ACTION_SETUP_RFID = 2
+MENU_ACTION_ARM_SYSTEM = 3
+MENU_ACTION_DISARM_SYSTEM = 4
+
 """
 Possible Options:
 
@@ -294,7 +300,8 @@ class Manager(object):
                         else:
                             # move down a level
                             #selMenuList = self.__generateMenuFromChildOptions(selMenuList, menuIndex, childOptionsIndex)
-                            umm what????
+                            #umm what????
+                            print("DEBUG_JW:umm what???? --------------------------------------------->FIXME!!!!!!")
                             menuIndex = childOptionsIndex # we've created a new list so reset index here
                             
                             if (len(selMenuList) == 0):

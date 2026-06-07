@@ -1,11 +1,19 @@
 import random
 import os
 
+PW_FILE = "PwFile.txt"
 
 KEYS = ['1','2','3','A',
         '4','5','6','B',
         '7','8','9','C',
         '*','0','#','D']
+
+
+### Static Methods ###
+def UserInputPW():
+    pwList = []
+
+    return pwList
 
 class PasswordData(object):
     
@@ -130,14 +138,14 @@ class Password(object):
         return result
     
     # Class: Password
-    def saveToDisk(self, fileName):
+    def saveToDisk(self, fileName=PW_FILE):
 
         with open(fileName, "w", encoding="utf-8") as file:
             file.write(self.getString())
             file.close()
             
     # Class: Password
-    def readFromDisk(self, fileName):
+    def readFromDisk(self, fileName=PW_FILE):
 
         with open(fileName, "r", encoding="utf-8") as file:
             pwStr = file.read()
@@ -179,7 +187,7 @@ def guessPW(testPW, testWord):
 def PwGuessTest():
     # generated PW test
     print("--- RANDOMLY GENERATED PASSWORD---")
-    testPwGen = Password(TEST_PW_LEN, KEYS)
+    testPwGen = Password(4, KEYS)
     testPwGen.printWord()
     print("\n")
     
@@ -193,7 +201,7 @@ def PwGuessTest():
     #non-generated PW test
     print("--- SUPPLIED MASTER PASSWORD---")
     masterPW = ['1','2','3','4']
-    testPw = Password(TEST_PW_LEN, KEYS, masterPW)
+    testPw = Password(len(masterPW), KEYS, masterPW)
     testPw.printWord()
     print("\n")
 
@@ -222,7 +230,7 @@ def PwReadTest():
 
 if __name__ == '__main__':     # Program start from here
     try:
-        #PwGuessTest()
+        PwGuessTest()
         PwWriteTest()
         PwReadTest()
 

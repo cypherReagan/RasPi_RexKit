@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
+import HwSim as HW
 
-import RPi.GPIO as GPIO
+if (HW.RASPI):
+    import RPi.GPIO as GPIO
+    import LCD1602
+    import LED
+    import ActiveBuzzer
+    #import RFID_Reader as Reader
+
 import time
-import LCD1602
-import LED
-import KeypadPuP as KP
-import ActiveBuzzer
 import Password as PW
-#import RFID_Reader as Reader
+import Menu
+import KeypadPuP as KP
 
-SW_REV = 0.2
+SW_REV = 0.3
 # 0.1 = implementing Menu Manager to maintain and navigate menu options
 # 0.2 = implemented Password class option to read/write to disk
+# 0.3 = added main simulation driver code and simple PW enter test
 
 """
 This Alarm System program requires RexKit HW for the following:
@@ -75,21 +80,26 @@ BUZZER_PIN = 29 #the BOARD pin (BCM05) connect to active buzzer
 
 ROWS = 4
 COLS = 4
-LENS = 4
+LENS = 4 # DEBUG_JW - TODO: remove this hardcoded length
+"""
 KEYS =     ['1','2','3','A',
             '4','5','6','B',
             '7','8','9','C',
             '*','0','#','D']
+"""
 
-passwordTest=['1','9','7','4']
 ThePassword = PW.Password(LENS, PW.KEYS)
+
+# Test code
 Testword=['0','0','0','0'] #DEBUG_JW - DELETEME
+passwordTest=['1','9','7','4']
 Masterword=['0','0','0','0']
-#KeyIndex=0#DEBUG_JW - DELETEME
+# end test code
+
 # Keypad pins
 ROW_PINS = [12,16,18,22] #BOARD pin numbering
 COL_PINS = [19,15,13,11]
-TheKeypad = KP.Keypad(KEYS,ROW_PINS,COL_PINS)
+TheKeyPad = KP.Keypad(PW.KEYS,ROW_PINS,COL_PINS)
 
 BUZZER_TIMEOUT = 5
 
@@ -118,34 +128,40 @@ def checkPW():
     return retNum, retWord
 
 def setup():
-    LED.setup()
-    LED.init(LED_GREEN)
-    LED.init(LED_RED)
-    ActiveBuzzer.setup(BUZZER_PIN)
+    if (HW.RASPI):
+        LED.setup()
+        LED.init(LED_GREEN)
+        LED.init(LED_RED)
+        ActiveBuzzer.setup(BUZZER_PIN)
     
-    LCD1602.init(0x27, 1)    # init(slave address, background light)
-    LCD1602.clear()
+        LCD1602.init(0x27, 1)    # init(slave address, background light)
+        LCD1602.clear()
+
     writeLCD(0, 0, 'WELCOME!')
     writeLCD(2, 1, 'Enter password')
     time.sleep(2)
 
 def clearLEDs():
-    LED.clear(LED_GREEN)
-    LED.clear(LED_RED)
+    if (HW.RASPI):
+        LED.clear(LED_GREEN)
+        LED.clear(LED_RED)
 
 def clearHW():
-    LCD1602.clear()
-    clearLEDs()
-    ActiveBuzzer.clear(BUZZER_PIN)
+    if (HW.RASPI):
+        LCD1602.clear()
+        clearLEDs()
+        ActiveBuzzer.clear(BUZZER_PIN)
     
 def destroy():
     print("--- Program Terminated ---")
     clearHW()
     # Release resource(s)
-    GPIO.cleanup()
+    if (HW.RASPI):
+        GPIO.cleanup()
     
 def writeLCD(xPos, yPos, msgStr):
-    LCD1602.write(xPos, yPos, msgStr)
+    if (HW.RASPI):
+        LCD1602.write(xPos, yPos, msgStr)
     print(msgStr)
     
 def processWord():
@@ -158,11 +174,12 @@ def processWord():
 # If successful, returns word array
 #
 # Assumes the keyPad has started capturing
-def getMasterUserWord(keypad):
+def getMasterUserWord(keypad, pwLen):
 
     done = False
     keyIndex = 0
-    word = ['','','','']
+    #word = ['','','','']
+    word = [''] * pwLen
     
     clearHW()
     
@@ -178,8 +195,8 @@ def getMasterUserWord(keypad):
             
             word[keyIndex]=key
             keyIndex+=1
-            print("DEBUG_JW: key = ", key, ", keyIndex = ", keyIndex)
-            if (keyIndex is LENS):
+            print("DEBUG_JW: getMasterUserWord () - key = ", key, ", keyIndex = ", keyIndex)
+            if (keyIndex is pwLen):
                 print("DEBUG_JW: getMasterUserPw() - returning PW")
                 return word
             
@@ -194,10 +211,13 @@ def alarmLoop(keypad):
     done = False
     tryCount = 3
     keyIndex = 0
-    
+    """"
     keypad.startReadKeys()
     masterWord = getMasterUserWord(keypad)
     ThePassword = PW.Password(LENS, PW.KEYS, masterWord)
+    """
+    # TODO: check if master PW exists on disk at startup
+    ThePassword = SetMasterPW(keypad, ThePassword)
     LCD1602.clear()
     
     while(not done):
@@ -240,14 +260,41 @@ def alarmLoop(keypad):
             if (done):
                 keypad.stopReadKeys()
     
-            
+def SetMasterPW(keypad, pw, pwLen):
+    keypad.startReadKeys()
+    masterWord = getMasterUserWord(keypad, pwLen)
+    pw = PW.Password(pwLen, PW.KEYS, masterWord)
+    pw.saveToDisk()
+
+    
+
+# ---------
+# Test Code
+# ---------      
             
 if __name__ == '__main__':     # Program start from here
-    try:
-        print("RASPI ALARM SYSTEM\nSW Rev = " + SW_REV)
-        setup()
-        alarmLoop(TheKeypad)
-        destroy()
-    except KeyboardInterrupt:  # When 'Ctrl+C' is pressed, end program.
-        TheKeypad.stopReadKeys()
-        destroy()
+    #global ThePassword
+    global TheKeypad
+
+    print("================================")
+    print("RASPI ALARM SYSTEM\nSW Rev = " + str(SW_REV))
+    print("================================")
+
+    if (not HW.RASPI):
+        print("Simulation driver")
+        # assume menu returned MENU_ACTION_SETPW
+        action = Menu.MENU_ACTION_SETPW
+
+        SetMasterPW(TheKeyPad,ThePassword, 6)
+
+        print("The end of simulation")
+        
+    else:
+        # DEBUG_JW - not ready for primetime until Menu is done
+        try:
+            setup()
+            alarmLoop(TheKeypad)
+            destroy()
+        except KeyboardInterrupt:  # When 'Ctrl+C' is pressed, end program.
+            TheKeypad.stopReadKeys()
+            destroy()
