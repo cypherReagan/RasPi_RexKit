@@ -13,10 +13,11 @@ import Password as PW
 import Menu
 import KeypadPuP as KP
 
-SW_REV = 0.3
+SW_REV = 0.4
 # 0.1 = implementing Menu Manager to maintain and navigate menu options
 # 0.2 = implemented Password class option to read/write to disk
 # 0.3 = added main simulation driver code and simple PW enter test
+# 0.4 = updated main simulation driver code to run system startup sequence
 
 """
 This Alarm System program requires RexKit HW for the following:
@@ -55,7 +56,7 @@ DEBUG_JW - TODO:
 
 9. Implement mobile blueDot app to arm/disarm system
 
-The system will allow user to setup and set the system password.
+The system will allow user to setup the system password.
 The LCD will show user options and password feedback.
 
 """
@@ -80,7 +81,9 @@ BUZZER_PIN = 29 #the BOARD pin (BCM05) connect to active buzzer
 
 ROWS = 4
 COLS = 4
-LENS = 4 # DEBUG_JW - TODO: remove this hardcoded length
+LENS = 4 # DEBUG_JW - TODO: remove this hardcoded length?
+
+PW_LEN = 4
 """
 KEYS =     ['1','2','3','A',
             '4','5','6','B',
@@ -127,6 +130,7 @@ def checkPW():
     
     return retNum, retWord
 
+# HW setup and utility functions
 def setup():
     if (HW.RASPI):
         LED.setup()
@@ -163,12 +167,6 @@ def writeLCD(xPos, yPos, msgStr):
     if (HW.RASPI):
         LCD1602.write(xPos, yPos, msgStr)
     print(msgStr)
-    
-def processWord():
-    
-    done = False
-    
-    return done
    
 # Prompts user for the master system password.
 # If successful, returns word array
@@ -178,7 +176,6 @@ def getMasterUserWord(keypad, pwLen):
 
     done = False
     keyIndex = 0
-    #word = ['','','','']
     word = [''] * pwLen
     
     clearHW()
@@ -201,6 +198,7 @@ def getMasterUserWord(keypad, pwLen):
                 return word
             
    
+# TODO: needs major refactor
 def alarmLoop(keypad):
     global LED_GREEN
     global LED_RED
@@ -217,7 +215,7 @@ def alarmLoop(keypad):
     ThePassword = PW.Password(LENS, PW.KEYS, masterWord)
     """
     # TODO: check if master PW exists on disk at startup
-    ThePassword = SetMasterPW(keypad, ThePassword)
+    ThePassword = SetMasterPW(keypad, ThePassword, LENS)
     LCD1602.clear()
     
     while(not done):
@@ -260,18 +258,71 @@ def alarmLoop(keypad):
             if (done):
                 keypad.stopReadKeys()
     
+# Reads user input for PW, sets pw, and saves it to disk.
+#
+# Returns the PW object with the new password set.     
 def SetMasterPW(keypad, pw, pwLen):
     keypad.startReadKeys()
     masterWord = getMasterUserWord(keypad, pwLen)
     pw = PW.Password(pwLen, PW.KEYS, masterWord)
     pw.saveToDisk()
+    return pw
 
-    
+# Attemps to read master system password from disk.
+# If successful reads PW, returns MENU_ACTION_INVALID. Else returns MENU_ACTION_SETPW
+# Returns the PW object with the read password (if successful) or unchanged PW (if unsuccessful) and the menu action to be taken.
+def ReadBackMasterPW(pw):
+    retAction = Menu.MENU_ACTION_SETPW
+
+    diskPwStr = pw.readFromDisk()
+
+    if ("" == diskPwStr):
+        retAction = Menu.MENU_ACTION_SETPW
+
+    return pw, retAction
+
+# Invoked at system startup to read back master PW from disk. 
+# If not successful, prompts user to set master PW.
+def RunSystemStartUp(keypad, pw, pwLen):
+    pw, action = ReadBackMasterPW(pw)
+
+    if (action == Menu.MENU_ACTION_SETPW):
+        pw = SetMasterPW(keypad,pw, pwLen)
+    return pw
 
 # ---------
 # Test Code
 # ---------      
-            
+def SimulationDriver(keypad, pw):
+    print("--- Simulation driver ---")
+
+    step = 1
+
+    # STEP. Clear any saved disk password for test
+    pw.clearDiskFile()
+
+    # STEP. simulate system startup and read back any save password
+    print(str(step) + ". Startup system check: Read PW")
+    pw, action = ReadBackMasterPW(pw)
+
+    if (action != Menu.MENU_ACTION_SETPW):
+        print("Sim Driver ERROR: invalid action after startup. Expecting action=MENU_ACTION_SETPW(" + str(Menu.MENU_ACTION_SETPW) + ") but got " + str(action))
+        return
+
+    # STEP. Set password on fresh system startup
+    step += 1
+    print(str(step) + ". Startup system check: Set PW")
+    action = Menu.MENU_ACTION_SETPW
+
+    pw = SetMasterPW(keypad,pw, HW.GetSimKeySize())
+
+    # STEP. Arm system
+    step += 1
+    action = Menu.MENU_ACTION_ARM_SYSTEM
+
+    print("---End of simulation driver---")
+    return pw
+
 if __name__ == '__main__':     # Program start from here
     #global ThePassword
     global TheKeypad
@@ -281,14 +332,7 @@ if __name__ == '__main__':     # Program start from here
     print("================================")
 
     if (not HW.RASPI):
-        print("Simulation driver")
-        # assume menu returned MENU_ACTION_SETPW
-        action = Menu.MENU_ACTION_SETPW
-
-        SetMasterPW(TheKeyPad,ThePassword, 6)
-
-        print("The end of simulation")
-        
+        ThePassword = SimulationDriver(TheKeyPad, ThePassword)
     else:
         # DEBUG_JW - not ready for primetime until Menu is done
         try:

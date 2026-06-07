@@ -34,6 +34,16 @@ def SetSimKeys(keys):
         global __SimKeys
         __SimKeys = keys
     
+def GetSimKeySize():
+    retVal = 0
+    if (RASPI):
+        print("ERROR: Cannot GetSimKeySize when HW is enabled")
+    else:
+        global __SimKeys
+        retVal = len(__SimKeys)
+
+    return retVal
+
 
 #----------------
 # LCD Simulation

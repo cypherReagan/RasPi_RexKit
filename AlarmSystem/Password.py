@@ -145,17 +145,28 @@ class Password(object):
             file.close()
             
     # Class: Password
+    # Updates self with pw text read from disk.
+    # Returns pw string read from disk
     def readFromDisk(self, fileName=PW_FILE):
 
-        with open(fileName, "r", encoding="utf-8") as file:
-            pwStr = file.read()
-            print("readFromDisk: " + pwStr)
-            file.close()
-            # now update our PasswordData
-            pwList = list(pwStr)
-            self.init(len(pwList), KEYS, pwList)# DEBUG_JW - TODO: don't hardcode KEYS here
-            
+        retStr = ""
 
+        if (os.path.isfile((fileName))):
+            with open(fileName, "r", encoding="utf-8") as file:
+                pwStr = file.read()
+                print("readFromDisk: " + pwStr)
+                retStr = pwStr
+                file.close()
+                # now update our PasswordData
+                pwList = list(pwStr)
+                self.init(len(pwList), KEYS, pwList)# DEBUG_JW - TODO: don't hardcode KEYS here
+
+        return retStr
+            
+    # Class: Password
+    def clearDiskFile(self, fileName=PW_FILE):
+        if (os.path.isfile((fileName))):
+            os.remove(fileName)
 
 # Static Methods
 def IsCorrectResult(word):
