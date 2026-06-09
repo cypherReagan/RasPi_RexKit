@@ -70,7 +70,7 @@ def setupDot(blueDot, col, row):
     
 
 def cleanup(bluetoothServer):
-    print("\nGoodbye!")
+    print("\nTerminate Blue Dot Server!")
     #bluetoothServer.disconnect_client()
 
 

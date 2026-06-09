@@ -1,3 +1,4 @@
+from enum import Enum
 import time
 import os
 import KeypadPuP as KP
@@ -8,11 +9,12 @@ if (HW.RASPI):
     import LCD1602
 
 # Driver Menu Actions
-MENU_ACTION_INVALID = 0
-MENU_ACTION_SETPW = 1
-MENU_ACTION_SETUP_RFID = 2
-MENU_ACTION_ARM_SYSTEM = 3
-MENU_ACTION_DISARM_SYSTEM = 4
+class Action(Enum):
+    INVALID = 0
+    SETPW = 1
+    RFID = 2
+    ARM_SYSTEM = 3
+    DISARM_SYSTEM = 4
 
 """
 Possible Options:

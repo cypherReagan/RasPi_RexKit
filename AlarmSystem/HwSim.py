@@ -1,7 +1,11 @@
-RASPI = False
+
+RASPI = False # Set flag to True to enable HW and False to disable HW and run in simulation mode.
 
 if (RASPI):
     import LCD1602
+    import LED
+    import ActiveBuzzer
+    import RPi.GPIO as GPIO
 
 
 #-------------------
@@ -68,8 +72,44 @@ def writeLCD(xPos, yPos, msgStr):
     if (RASPI):
         LCD1602.write(xPos, yPos, msgStr)
 
+
+#----------------
+# LED Simulation
+#----------------
+def setupLEDs(ledGreenPin, ledRedPin):
+    if (RASPI):
+        LED.setup()
+        LED.init(ledGreenPin)
+        LED.init(ledRedPin)
+
+def clearLEDs(ledGreenPin, ledRedPin):
+    if (RASPI):
+        LED.clear(ledGreenPin)
+        LED.clear(ledRedPin)
+
+def enableLED(ledPin):
+    if (RASPI):
+        LED.enable(ledPin)
+#----------------
+# Buzzer Simulation
+#----------------
+def setupBuzzer(buzzerPin):
+    if (RASPI):
+        ActiveBuzzer.setup(buzzerPin)
+
+def clearBuzzer(buzzerPin):
+    if (RASPI):
+        ActiveBuzzer.clear(buzzerPin)
+
+#--------------------
+# General Simulation
+#--------------------
 def init():
     initLCD()
+
+def cleanupGpio():
+    if (RASPI):
+        GPIO.cleanup()
     
     
 if __name__ == '__main__':     # Program start from here
