@@ -19,7 +19,7 @@ SW_REV = 0.5
 # 0.3 = added main simulation driver code and simple PW enter test
 # 0.4 = updated main simulation driver code to run system startup sequence
 # 0.5 = refactored HW setup and cleanup code into HwSim. Also updated project details.
-
+# 0.6 = code cleanup and refactored SimKey codeto prevent stale data. Also fixed some bugs in Menu code.
 """
 This Alarm System program requires RexKit HW for the following:
 
@@ -102,15 +102,8 @@ BUZZER_PIN = 29 #the BOARD pin (BCM05) connect to active buzzer
 
 ROWS = 4
 COLS = 4
-#LENS = 4 # DEBUG_JW - TODO: remove this hardcoded length?
 
 PW_LEN = 4
-"""
-KEYS =     ['1','2','3','A',
-            '4','5','6','B',
-            '7','8','9','C',
-            '*','0','#','D']
-"""
 
 ThePassword = PW.Password(PW_LEN, PW.KEYS)
 
@@ -303,6 +296,8 @@ def RunSystemStartUp(keypad, pw, pwLen):
 # ---------      
 def SimulationDriver(keypad, pw):
     print("--- Simulation driver ---")
+
+    HW.SetSimKeys(['1','2','3','4']) 
 
     step = 1
 

@@ -24,7 +24,7 @@ Possible Options:
 3. Arm/Disarm System
 """
 
-UNIT_TEST = False
+UNIT_TEST = True # Toggle For Unit Tests 
 if (HW.RASPI):
     # cannot unit test on real HW
     UNIT_TEST = False
@@ -46,9 +46,10 @@ MENU_STATE_BOTTOM_LEVEL = 2
 
 class MenuData(object):
 
-    def __init__(self, name, options, parent, levelState = MENU_STATE_MIDDLE_LEVEL):
+    def __init__(self, name, options, parent, levelState = MENU_STATE_MIDDLE_LEVEL, trigger = None):
         try:
             self.__parent = parent
+            self.__trigger = trigger
             self.__name = name
             self.__options = options
             self.__levelState = levelState
@@ -62,6 +63,9 @@ class MenuData(object):
     def getParent(self):
         return self.__parent
     
+    def getTrigger(self):
+        return self.__trigger
+    
     def getOptions(self):
         return self.__options
     
@@ -72,6 +76,9 @@ class MenuData(object):
             retVal = self.__options[index]
         
         return retVal
+
+    def getLevel(self):
+        return self.__levelState
 
     def isTopLevel(self):
         retVal = False
@@ -203,6 +210,23 @@ class Manager(object):
         return retIndex
     
     # Class: Manager
+    # Find the child menu for the given parent menu name and selected option label
+    # Return the matching MenuData object, else None
+    def __findChildMenuByOption(self, parentMenuName, selectedOption):
+        for menu in self.__menuList:
+            if menu.getParent() == parentMenuName and menu.getTrigger() == selectedOption:
+                return menu
+        return None
+    
+    # Class: Manager
+    # Find a menu by its unique name
+    def __findMenuByName(self, name):
+        for menu in self.__menuList:
+            if menu.getName() == name:
+                return menu
+        return None
+    
+    # Class: Manager
     # Find the child options from the given parent name
     # Return list is valid if options found, else empty
     def __getChildOptionsFromParent(self, parentName):
@@ -251,70 +275,40 @@ class Manager(object):
         
         retName = ""
         done = False
-        menuIndex = 0
-        
-        selMenuList = self.__menuList # start at top-level
+        currentMenu = self.__menuList[0] if len(self.__menuList) > 0 else None
         
         try:
-        
-            while(not done):
+            while (not done) and currentMenu is not None:
+                selection = currentMenu.run(keypad)
                 
-                prevIndex = menuIndex
-                menuIndex = selMenuList[menuIndex].run(keypad) # fire off the current menu item and get the selection returned
-                
-                isValid = False
-                
-                if ((menuIndex < MENU_RUN_CANCELLED) or (menuIndex == MENU_RUN_SELECTION_ERROR) or (menuIndex >= len(selMenuList))):
-                    print("ERROR: Menu Manager run() - invalid menuIndex from run() =  ", menuIndex, " and len(selMenuList) = ", len(selMenuList))
+                if (selection == MENU_RUN_SELECTION_ERROR):
+                    print("ERROR: Menu Manager run() - invalid selection")
                     done = True
-                elif (menuIndex == MENU_RUN_CANCELLED):
-                    # user backs out of current level
-                    # TODO: generate new menu based on the parent
-                    menuIndex = prevIndex
-                    if (selMenuList[menuIndex].isTopLevel()):
-                        # the current level is at the top so backing out quits entire menu
+                    break
+                elif (selection == MENU_RUN_CANCELLED):
+                    if (currentMenu.isTopLevel()):
                         done = True
-                    else:
-                        # go back a level
-                        parentIndex = self.__findOptionsIndexFromParent(selMenuList[menuIndex].getParent())
-                        if (index == -1):
-                            print("ERROR: Could not find parent index!")
+                        break
+                    currentMenu = self.__findMenuByName(currentMenu.getParent())
+                    if currentMenu is None:
+                        currentMenu = self.__menuList[0] if len(self.__menuList) > 0 else None
+                        if currentMenu is None:
+                            print("ERROR: Menu Manager run() - could not find parent menu")
                             done = True
-                        else:
-                            menuIndex = parentIndex
-                            isValid = True
-                else:
-                    # got a valid selection
-                    isValid = True
-                    
-                if (isValid):
-                    if (selMenuList[menuIndex].isBottomLevel()):
-                        # found bottom-level menu so quit done here
-                        retName = selMenuList[menuIndex].getOption(menuIndex)
-                        done = True
-                    else:
-                        # generate a new MenuData list based on the options
-                        parentOptions = selMenuList[menuIndex].getOptions()
-                        searchName = selMenuList[menuIndex].getName()
-                        childOptionsIndex = self.__findOptionsIndexFromParent(searchName) # locate the child options of the target menu
-                        
-                        if (childOptionsIndex == -1):
-                            print("ERROR: Menu Manager run() - could not find childOptions index for parentName: ", searchName)
-                        else:
-                            # move down a level
-                            #selMenuList = self.__generateMenuFromChildOptions(selMenuList, menuIndex, childOptionsIndex)
-                            #umm what????
-                            print("DEBUG_JW:umm what???? --------------------------------------------->FIXME!!!!!!")
-                            menuIndex = childOptionsIndex # we've created a new list so reset index here
-                            
-                            if (len(selMenuList) == 0):
-                                print("ERROR: Menu Manager run() - new menu list empty")
-                                done = True
-                        
+                    continue
+                
+                selectedOption = currentMenu.getOption(selection)
+                childMenu = self.__findChildMenuByOption(currentMenu.getName(), selectedOption)
+                
+                if childMenu is not None:
+                    currentMenu = childMenu
+                    continue
+                
+                # No child menu; return current selection as final action.
+                retName = selectedOption
+                done = True
         except Exception as e:
             print("ERROR: Menu Manager run() - Exception Occurred: ", e)
-            
-                        
         
         return retName
             
@@ -328,14 +322,14 @@ class Manager(object):
             print("ERROR: Menu Manager generateMenuFromChildOptions() - Invalid childOptionsIndex =", childOptionsIndex, " when listSize =", len(selMenuList))
         else:
             # NOTE: each new menu item will have the duplicate options if we're are the bottom level
-            isBottomLevel = selMenuList[childOptionsIndex].isBottomLevel()
+            level = selMenuList[childOptionsIndex].getLevel()
             childName = selMenuList[childOptionsIndex].getName()
             childOptions = selMenuList[childOptionsIndex].getOptions()
             parentName = selMenuList[menuIndex].getName()
 
             for item in childOptions:
                 newChildOptions = self.__getChildOptionsFromParent(parentName) 
-                menu = MenuData(childName, newChildOptions, parentName, isBottomLevel)
+                menu = MenuData(childName, newChildOptions, parentName, level)
                 retList.append(menu)
     
         return retList
@@ -347,14 +341,14 @@ class Manager(object):
         retList = []
         
         # NOTE: each new menu item will have the duplicate options if we're are the bottom level
-        isBottomLevel = selMenuList[childOptionsIndex].isBottomLevel()
+        level = selMenuList[childOptionsIndex].getLevel()
         childName = selMenuList[childOptionsIndex].getName()
         childOptions = selMenuList[childOptionsIndex].getOptions()
         parentName = selMenuList[menuIndex].getName()
 
         for item in childOptions:
             newChildOptions = self.__getChildOptionsFromParent(parentName) 
-            menu = MenuData(childName, newChildOptions, parentName, isBottomLevel)
+            menu = MenuData(childName, newChildOptions, parentName, level)
             retList.append(menu)
     
         return retList
@@ -362,7 +356,7 @@ class Manager(object):
 # ---------
 # Test Code
 # ---------
-TestKeyPad = KP.Keypad(KP.KEYS,KP.ROW_PINS,KP.COL_PINS)
+TestKeyPad = KP.Keypad(KP.KEYS_ALL,KP.ROW_PINS,KP.COL_PINS)
 
 TEST_OPTIONS1 = ["Set Master PW",
                  "Setup Card",
@@ -376,7 +370,7 @@ TEST_OPTIONS2 = ["Set PW1",
 TEST_OPTIONS3 = ["Setup Card1",
                  "Setup Card2"]
 
-MENU_NAMES = ["Options1", "Options2", "Options3"]
+MENU_NAMES = ["OptionsLevel1", "OptionsLevel2", "OptionsLevel3"]
 MENUS = [TEST_OPTIONS1, TEST_OPTIONS2, TEST_OPTIONS3]
 
 Password1 = ""
@@ -387,6 +381,7 @@ MenuLookup = []
 
 def setup():
     HW.init()
+    HW.SetSimKeys([])
     
     # clear colsole for new run
     for i in range(20):
@@ -399,10 +394,10 @@ def setup():
     
     #               "Options1"   ["Set Master PW","Setup Card"...]  ""         TopLevel
     menu1 = MenuData(MENU_NAMES[0], TEST_OPTIONS1, "", MENU_STATE_TOP_LEVEL)
-    #               "Options2"   ["Set PW1","Set PW2"]           "Options1"    BottomLevel
-    menu2 = MenuData(MENU_NAMES[1], TEST_OPTIONS2, MENU_NAMES[0], MENU_STATE_BOTTOM_LEVEL)
-    #               "Options3"   ["Setup Card1","Setup Card2"]   "Options2"    BottomLevel
-    menu3 = MenuData(MENU_NAMES[2], TEST_OPTIONS3, MENU_NAMES[1], MENU_STATE_BOTTOM_LEVEL)
+    #               "Options2"   ["Set PW1","Set PW2"]           "OptionsLevel1"    BottomLevel
+    menu2 = MenuData(MENU_NAMES[1], TEST_OPTIONS2, MENU_NAMES[0], MENU_STATE_BOTTOM_LEVEL, trigger = TEST_OPTIONS1[0])
+    #               "Options3"   ["Setup Card1","Setup Card2"]   "OptionsLevel1"    BottomLevel
+    menu3 = MenuData(MENU_NAMES[2], TEST_OPTIONS3, MENU_NAMES[0], MENU_STATE_BOTTOM_LEVEL, trigger = TEST_OPTIONS1[1])
     
     MenuMgr.addMenu(menu1)
     MenuMgr.addMenu(menu2)
@@ -427,10 +422,10 @@ def SetPw2(keypad):
         Password2 = input('Enter Password2 in console: ')
 
 def SetupCard1(keypad):
-    printf("Setup Card1 complete")
+    print("Setup Card1 complete")
     
 def SetupCard2(keypad):
-    printf("Setup Card2 complete")
+    print("Setup Card2 complete")
 
 def destroy():
     print("--- Menu Test Terminated By User ---")
@@ -463,7 +458,7 @@ def runMenuUnitTests(keypad):
         # Test 2
         # ----------
         testNum += 1
-        keys = ['B', 'A', 'C', 'A'] # back up level and select "Set PW2"
+        keys = ['A', 'C', 'A'] # select "Set Master PW", then "Set PW2"
         HW.SetSimKeys(keys)
         
         menu = runMenuTest(keypad)
@@ -478,7 +473,7 @@ def runMenuUnitTests(keypad):
         # Test 3
         # ----------
         testNum += 1
-        keys = ['B', 'C', 'A'] # back up level and select "Setup Card1"
+        keys = ['B', 'A'] # select "Setup Card", then "Setup Card1"
         HW.SetSimKeys(keys)
         
         menu = runMenuTest(keypad)

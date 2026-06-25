@@ -16,10 +16,14 @@ HOLD_TIME = 0.3
 ROWS = 4
 COLS = 4
 LENS = 4
-KEYS =     ['1','2','3','A',
-            '4','5','6','B',
-            '7','8','9','C',
-            '*','0','#','D']
+
+KEYS_ROW1 = ['1','2','3','A']
+KEYS_ROW2 = ['4','5','6','B']
+KEYS_ROW3 = ['7','8','9','C']
+KEYS_ROW4 = ['*','0','#','D']
+
+KEYS_ALL = KEYS_ROW1 + KEYS_ROW2 + KEYS_ROW3 + KEYS_ROW4
+
 password=['1','9','7','4']
 testword=['0','0','0','0']
 
@@ -96,9 +100,12 @@ class Keypad(object):
             
         return retKey
 
+    # Continues to read keys until stop signaled.  
+    # Queues any keypresses for later retrieval.
     def pollRows(self):
         
         simKeyIndex = 0
+        lastSimKeysVersion = -1
         
         while True:
             if (self.__stopReadFlag):
@@ -110,28 +117,38 @@ class Keypad(object):
                 else:
                     # read from simulation
                     simKeys = HW.GetSimKeys()
+                    simKeysVersion = HW.GetSimKeysVersion()
+                    if simKeysVersion != lastSimKeysVersion:
+                        simKeyIndex = 0
+                        lastSimKeysVersion = simKeysVersion
+                        with self.__keyQueue.mutex:
+                            self.__keyQueue.queue.clear()
+
                     if (simKeyIndex < len(simKeys)):
                         char = simKeys[simKeyIndex]
-                        print("DEBUG_JW: Keypad.pollRows() - getting sim key: ", char) # Confused: somehow this causes KP to get the updated keys???
+                        print("DEBUG_JW: Keypad.pollRows() - getting sim key: ", char)
                         self.__keyQueue.put(char)
                         simKeyIndex += 1
+                    else:
+                        # No remaining keys in the current sequence
+                        time.sleep(HOLD_TIME)
                 
- 
+
     # Function reads each keypad row and queues any keychar
     def readRows(self):
-        char = self.readLine(self.__rowPins[0], ["1","2","3","A"])
+        char = self.readLine(self.__rowPins[0], KEYS_ROW1)
         if (not char == ""):
             self.__keyQueue.put(char)
         
-        char = self.readLine(self.__rowPins[1], ["4","5","6","B"])
+        char = self.readLine(self.__rowPins[1], KEYS_ROW2)
         if (not char == ""):
             self.__keyQueue.put(char)
         
-        char = self.readLine(self.__rowPins[2], ["7","8","9","C"])
+        char = self.readLine(self.__rowPins[2], KEYS_ROW3)
         if (not char == ""):
             self.__keyQueue.put(char)
         
-        char = self.readLine(self.__rowPins[3], ["*","0","#","D"])
+        char = self.readLine(self.__rowPins[3], KEYS_ROW4)
         if (not char == ""):
             self.__keyQueue.put(char)
 
@@ -190,7 +207,7 @@ PIN_C4 = 11 #Pin 17  BCM
 ROW_PINS = [PIN_L1,PIN_L2,PIN_L3,PIN_L4]
 COL_PINS = [PIN_C1,PIN_C2,PIN_C3,PIN_C4]
 
-TestKeyPad = Keypad(KEYS,ROW_PINS,COL_PINS)
+TestKeyPad = Keypad(KEYS_ALL,ROW_PINS,COL_PINS)
  
 def simpleTestLoop(keypad):
      
@@ -218,7 +235,7 @@ if __name__ == '__main__':     # Program start from here
         print('WELCOME to the simple keypad test (pull-up version)!')
         print('Enter password')
         time.sleep(2)
-        #TestKeyPad = Keypad(KEYS,ROW_PINS,COL_PINS) # this global is declared above
+        #TestKeyPad = Keypad(KEYS_ALL,ROW_PINS,COL_PINS) # this global is declared above
         
         simpleTestLoop(TestKeyPad)
         

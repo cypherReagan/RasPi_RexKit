@@ -26,7 +26,7 @@ class Reader(object):
             # should not get here
             print("ERROR: Could not init MFRC522 reader!")
             
-    # Returns tag id, text        
+    # Returns id, text        
     def read(self):
         id, text = self.__theReader.read()
         return id, text

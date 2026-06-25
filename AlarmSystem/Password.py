@@ -1,13 +1,16 @@
 import random
 import os
+import KeypadPuP as KP
 
 PW_FILE = "PwFile.txt"
-
+"""
+# Enter any custom keys here.  If you want to use the default KEYS, just leave this list empty.
 KEYS = ['1','2','3','A',
         '4','5','6','B',
         '7','8','9','C',
         '*','0','#','D']
-
+""" 
+KEYS = KP.KEYS_ALL       
 
 ### Static Methods ###
 def UserInputPW():

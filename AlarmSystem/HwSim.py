@@ -12,31 +12,39 @@ if (RASPI):
 # Keypad Simulation
 #-------------------
 __SimKeys = []
+__SimKeysVersion = 0
 if (not RASPI):
     # <Insert Desired Keypad Simulation Sequence Here or Use Accessors To Set Keys>
+    x =1 # dummy line to allow for easy insertion of desired keypad simulation sequence.  See SetSimKeys() below.
+    # Default sequence should be empty so unit tests explicitly set the desired keys.
+    # Main Test example:
+    # __SimKeys = ['A', 'B', 'C', '1', '2', '3'] # main PW test: pass
 
-    # Main Test
-    __SimKeys = ['A', 'B', 'C', '1', '2', '3'] # main PW test: pass
-
-    # Menu Test
-    #__SimKeys = ['A', 'A'] # menu test: pass
-    #__SimKeys = ['A', 'C', 'A'] # menu test: pass
-    #__SimKeys = ['A', 'B'] # menu test: fail
-    #__SimKeys = ['B'] # menu test: pass
-    #__SimKeys = ['B', 'A'] # menu test: pass
-    #__SimKeys = ['C', 'A', 'A'] # menu test: fail
+    # Menu Test examples:
+    # __SimKeys = ['A', 'A'] # menu test: pass
+    # __SimKeys = ['A', 'C', 'A'] # menu test: pass
+    # __SimKeys = ['A', 'B'] # menu test: fail
+    # __SimKeys = ['B'] # menu test: pass
+    # __SimKeys = ['B', 'A'] # menu test: pass
+    # __SimKeys = ['C', 'A', 'A'] # menu test: fail
 
 
 def GetSimKeys():
     global __SimKeys
     return __SimKeys
 
+def GetSimKeysVersion():
+    global __SimKeysVersion
+    return __SimKeysVersion
+
 def SetSimKeys(keys):
     if (RASPI):
         print("ERROR: Cannot SetSimKeys when HW is enabled")
     else:
         global __SimKeys
+        global __SimKeysVersion
         __SimKeys = keys
+        __SimKeysVersion += 1
     
 def GetSimKeySize():
     retVal = 0
