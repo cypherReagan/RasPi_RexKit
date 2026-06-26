@@ -20,6 +20,7 @@ SW_REV = 0.5
 # 0.4 = updated main simulation driver code to run system startup sequence
 # 0.5 = refactored HW setup and cleanup code into HwSim. Also updated project details.
 # 0.6 = code cleanup and refactored SimKey codeto prevent stale data. Also fixed some bugs in Menu code.
+# 0.7 = refactored Menu code to use tree structure with objects. Also added more unit tests for menu navigation and selection.
 """
 This Alarm System program requires RexKit HW for the following:
 
